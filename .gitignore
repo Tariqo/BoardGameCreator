@@ -1,0 +1,8 @@
+server/node_modules/
+server/dist/
+server/.env*
+
+client/build/
+
+
+!server/.env.example
