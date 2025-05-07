@@ -1,26 +1,21 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import LayoutSelector from './components/LayoutSelector';
+import Layout1 from './components/Layout1';
+import Layout2 from './components/Layout2';
+import { useLayout } from './store/layoutStore';
 
-function App() {
+const App: React.FC = () => {
+  const { currentLayout } = useLayout();
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{ padding: '2rem', textAlign: 'center' }}>
+      <h1>Welcome to BoardGame Creator</h1>
+      <LayoutSelector />
+      <div style={{ marginTop: '2rem' }}>
+        {currentLayout === 'layout1' ? <Layout1 /> : <Layout2 />}
+      </div>
     </div>
   );
-}
+};
 
 export default App;
