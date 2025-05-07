@@ -5,7 +5,7 @@ const LayoutSelector: React.FC = () => {
   const { currentLayout, setLayout } = useLayout();
 
   return (
-    <div style={{ marginTop: '1rem' }}>
+    <div style={{ marginBottom: '1rem' }}>
       <button
         onClick={() => setLayout('layout1')}
         style={{
@@ -13,7 +13,7 @@ const LayoutSelector: React.FC = () => {
           fontWeight: currentLayout === 'layout1' ? 'bold' : 'normal',
         }}
       >
-        Layout 1
+        Horizontal Layout
       </button>
       <button
         onClick={() => setLayout('layout2')}
@@ -21,10 +21,11 @@ const LayoutSelector: React.FC = () => {
           fontWeight: currentLayout === 'layout2' ? 'bold' : 'normal',
         }}
       >
-        Layout 2
+        Vertical Layout
       </button>
     </div>
   );
 };
 
 export default LayoutSelector;
+
