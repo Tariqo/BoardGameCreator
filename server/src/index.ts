@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
+import projectRoutes from './routes/projectRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 // Load environment variables
@@ -11,15 +12,16 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
+// Set up middleware
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// API endpoints
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/projects', projectRoutes);
 
-// Error handling middleware
+// Global error handler
 app.use(errorHandler);
 
 // MongoDB connection
