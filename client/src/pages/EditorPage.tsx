@@ -1,5 +1,5 @@
 import React from 'react';
-import PlayerHand from '../components/PlayerHand';
+import PlayerHand from '../components/Layout/PlayerHand';
 import GameCanvas from '../components/GameEditor/GameCanvas';
 
 const EditorPage = () => {
