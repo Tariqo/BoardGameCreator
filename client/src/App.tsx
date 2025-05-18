@@ -1,18 +1,23 @@
+// src/App.tsx
 import React from 'react';
-import LayoutSelector from './components/LayoutSelector';
-import Layout1 from './components/Layout1';
-import Layout2 from './components/Layout2';
-import { useLayout } from './store/layoutStore';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import EditorPage from './pages/EditorPage';
+import GamesPage from './pages/GamesPage';
+import ProfilePage from './pages/ProfilePage';
+import { useLayout } from './store/layoutStore'; // ✅ this is safe
 
-const App: React.FC = () => {
-  const { currentLayout } = useLayout();
+const App = () => {
+  const { currentLayout } = useLayout(); // ✅ this must stay inside component
 
   return (
-    <div style={{ padding: '2rem', textAlign: 'center' }}>
-      <h1>Welcome to BoardGame Creator</h1>
-      <LayoutSelector />
-      {currentLayout === 'layout1' ? <Layout1 /> : <Layout2 />}
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Navigate to="/editor" />} />
+        <Route path="/editor" element={<EditorPage />} />
+        <Route path="/games" element={<GamesPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+      </Routes>
+    </Router>
   );
 };
 

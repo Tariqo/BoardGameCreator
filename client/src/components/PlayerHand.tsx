@@ -30,7 +30,22 @@ const PlayerHand: React.FC<PlayerHandProps> = ({ owner }) => {
       <h3>{owner}'s Resources</h3>
 
       {cards.map(card => (
-        <div key={card.id} style={{ marginBottom: '0.5rem' }}>
+       <div
+          key={card.id}
+          draggable
+          onDragStart={(e) => {
+            console.log('Dragging:', card);
+            e.dataTransfer.setData('application/json', JSON.stringify({ ...card }));
+          }}
+          style={{
+            marginBottom: '0.5rem',
+            padding: '0.25rem',
+            border: '1px solid gray',
+            borderRadius: '4px',
+            backgroundColor: '#f9f9f9',
+            cursor: 'grab',
+          }}
+        >
           <strong>{card.name}</strong>: {card.count}
           <button onClick={() => updateCard(owner, card.id, +1)} style={{ marginLeft: '0.5rem' }}>+</button>
           <button onClick={() => updateCard(owner, card.id, -1)} style={{ marginLeft: '0.3rem' }}>-</button>
