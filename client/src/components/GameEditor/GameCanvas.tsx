@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Stage, Layer, Rect, Text, Image as KonvaImage } from 'react-konva';
 
 interface CanvasCard {
@@ -11,37 +11,39 @@ interface CanvasCard {
 const spriteUrl = 'https://konvajs.org/assets/lion.png';
 
 const GameCanvas: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 500 });
   const [cardsOnCanvas, setCardsOnCanvas] = useState<CanvasCard[]>([]);
   const [spriteImage, setSpriteImage] = useState<HTMLImageElement | null>(null);
   const [lionPos, setLionPos] = useState({ x: 600, y: 100 });
 
-  const [stageSize, setStageSize] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
+  // Resize logic
+  useEffect(() => {
+    const resize = () => {
+      if (containerRef.current) {
+        setCanvasSize({
+          width: containerRef.current.offsetWidth,
+          height: containerRef.current.offsetHeight,
+        });
+      }
+    };
 
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, []);
+
+  // Load sprite
   useEffect(() => {
     const img = new window.Image();
     img.src = spriteUrl;
     img.onload = () => setSpriteImage(img);
   }, []);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setStageSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
+  // Drop handler
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    console.log('Drop triggered');
     const stage = stageRef.current;
     const pointer = stage?.getPointerPosition();
     if (!pointer) return;
@@ -65,19 +67,16 @@ const GameCanvas: React.FC = () => {
 
   return (
     <div
+      ref={containerRef}
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
-      style={{ border: '1px solid #ccc', padding: '1rem' }}
+      className="w-full h-[500px] md:h-[600px] bg-gray-100 border"
     >
-      <h2>Game Canvas</h2>
       <Stage
-        width={stageSize.width}
-        height={stageSize.height}
-        style={{
-          border: '2px dashed red',
-          backgroundColor: '#f4f4f4',
-        }}
         ref={stageRef}
+        width={canvasSize.width}
+        height={canvasSize.height}
+        style={{ backgroundColor: '#f4f4f4' }}
       >
         <Layer>
           {cardsOnCanvas.map((card) => (
@@ -115,12 +114,6 @@ const GameCanvas: React.FC = () => {
                   x: e.target.x(),
                   y: e.target.y(),
                 });
-              }}
-              dragBoundFunc={(pos) => {
-                return {
-                  x: Math.max(0, Math.min(stageSize.width - 100, pos.x)),
-                  y: Math.max(0, Math.min(stageSize.height - 100, pos.y)),
-                };
               }}
             />
           )}
