@@ -648,11 +648,14 @@ const applyModuleDefaults = (
 			"unsafeCache",
 			/**
 			 * @param {Module} module module
-			 * @returns {boolean | null | string} true, if we want to cache the module
+			 * @returns {boolean} true, if we want to cache the module
 			 */
 			module => {
 				const name = module.nameForCondition();
-				return name && NODE_MODULES_REGEXP.test(name);
+				if (!name) {
+					return false;
+				}
+				return NODE_MODULES_REGEXP.test(name);
 			}
 		);
 	} else {
@@ -683,7 +686,8 @@ const applyModuleDefaults = (
 	F(module.parser, "javascript", () => ({}));
 	F(module.parser, JSON_MODULE_TYPE, () => ({}));
 	D(
-		module.parser[JSON_MODULE_TYPE],
+		/** @type {NonNullable<ParserOptionsByModuleTypeKnown[JSON_MODULE_TYPE]>} */
+		(module.parser[JSON_MODULE_TYPE]),
 		"exportsDepth",
 		mode === "development" ? 1 : Infinity
 	);
@@ -1551,7 +1555,7 @@ const applyOptimizationDefaults = (
 							passes: 2
 						}
 					}
-				}).apply(/** @type {TODO} */ (compiler));
+				}).apply(/** @type {EXPECTED_ANY} */ (compiler));
 			}
 		}
 	]);
@@ -1726,8 +1730,8 @@ const getResolveLoaderDefaults = ({ cache }) => {
 const applyInfrastructureLoggingDefaults = infrastructureLogging => {
 	F(infrastructureLogging, "stream", () => process.stderr);
 	const tty =
-		/** @type {EXPECTED_ANY} */ (infrastructureLogging.stream).isTTY &&
-		process.env.TERM !== "dumb";
+		/** @type {NonNullable<InfrastructureLogging["stream"]>} */
+		(infrastructureLogging.stream).isTTY && process.env.TERM !== "dumb";
 	D(infrastructureLogging, "level", "info");
 	D(infrastructureLogging, "debug", false);
 	D(infrastructureLogging, "colors", tty);

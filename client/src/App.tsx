@@ -1,18 +1,57 @@
+// src/App.tsx
 import React from 'react';
-import LayoutSelector from './components/LayoutSelector';
-import Layout1 from './components/Layout1';
-import Layout2 from './components/Layout2';
-import { useLayout } from './store/layoutStore';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+import LoginPage from './pages/LoginPage';
+import ProfilePage from './pages/ProfilePage';
+import EditorPage from './pages/EditorPage';
+import GamesPage from './pages/GamesPage';
+import PrivateRoute from './components/Auth/PrivateRoute';
+import AdminRoute from './components/Auth/AdminRoute'; // if needed
+import { AuthProvider } from './context/AuthContext';
 
 const App: React.FC = () => {
-  const { currentLayout } = useLayout();
-
   return (
-    <div style={{ padding: '2rem', textAlign: 'center' }}>
-      <h1>Welcome to BoardGame Creator</h1>
-      <LayoutSelector />
-      {currentLayout === 'layout1' ? <Layout1 /> : <Layout2 />}
-    </div>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/games" element={<GamesPage />} />
+          <Route path="/login" element={<LoginPage />} />
+
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <ProfilePage />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/editor"
+            element={
+              <PrivateRoute>
+                <EditorPage />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Optional: Admin-only page */}
+          {/* 
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          /> 
+          */}
+
+          <Route path="*" element={<LoginPage />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 };
 
