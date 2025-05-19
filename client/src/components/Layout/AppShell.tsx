@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Sidebar from './Sidebar';
-import Header from './Header';
+import EditorSidebar from './EditorSidebar';
+import EditorTopbar from './EditorTopbar';
 import RightPanel from './RightPanel';
 
 const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -8,9 +8,9 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="flex flex-col h-screen">
-      <Header />
+      <EditorTopbar />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
+        <EditorSidebar />
         <main className={`transition-all duration-300 ${showRightPanel ? 'w-full' : 'flex-1'} overflow-auto p-4 bg-gray-50`}>
           {children}
         </main>
