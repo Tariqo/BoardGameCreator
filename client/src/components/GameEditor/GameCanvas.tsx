@@ -1,24 +1,34 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Stage, Layer, Rect, Text, Image as KonvaImage } from 'react-konva';
+import { Stage, Layer, Rect, Text } from 'react-konva';
 
-interface CanvasCard {
-  id: number;
+interface CanvasElement {
+  id: string;
   name: string;
+  type: 'card' | 'text' | 'token'; 
   x: number;
   y: number;
 }
 
-const spriteUrl = 'https://konvajs.org/assets/lion.png';
 
-const GameCanvas: React.FC = () => {
+interface GameCanvasProps {
+  elements: CanvasElement[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  onElementMove: (id: string, x: number, y: number) => void;
+  onElementDrop?: (el: Omit<CanvasElement, 'id'>, position: { x: number; y: number }) => void;
+}
+
+const GameCanvas: React.FC<GameCanvasProps> = ({
+  elements,
+  selectedId,
+  onSelect,
+  onElementMove,
+  onElementDrop,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 500 });
-  const [cardsOnCanvas, setCardsOnCanvas] = useState<CanvasCard[]>([]);
-  const [spriteImage, setSpriteImage] = useState<HTMLImageElement | null>(null);
-  const [lionPos, setLionPos] = useState({ x: 600, y: 100 });
 
-  // Resize logic
   useEffect(() => {
     const resize = () => {
       if (containerRef.current) {
@@ -28,49 +38,33 @@ const GameCanvas: React.FC = () => {
         });
       }
     };
-
     resize();
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
   }, []);
 
-  // Load sprite
-  useEffect(() => {
-    const img = new window.Image();
-    img.src = spriteUrl;
-    img.onload = () => setSpriteImage(img);
-  }, []);
-
-  // Drop handler
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const stage = stageRef.current;
     const pointer = stage?.getPointerPosition();
-    if (!pointer) return;
+    if (!pointer || !onElementDrop) return;
 
     try {
       const raw = e.dataTransfer.getData('application/json');
-      const droppedCard = JSON.parse(raw);
+      const dropped = JSON.parse(raw); // { name: ..., type: ... }
 
-      const newCard: CanvasCard = {
-        ...droppedCard,
-        id: Date.now(),
-        x: pointer.x,
-        y: pointer.y,
-      };
-
-      setCardsOnCanvas((prev) => [...prev, newCard]);
+      onElementDrop(dropped, pointer);
     } catch {
-      console.error('Invalid card drop');
+      console.error('Invalid drop data');
     }
   };
 
   return (
     <div
       ref={containerRef}
+      className="w-full h-full"
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
-      className="w-full h-[500px] md:h-[600px] bg-gray-100 border"
     >
       <Stage
         ref={stageRef}
@@ -79,44 +73,33 @@ const GameCanvas: React.FC = () => {
         style={{ backgroundColor: '#f4f4f4' }}
       >
         <Layer>
-          {cardsOnCanvas.map((card) => (
-            <React.Fragment key={card.id}>
+          {elements.map((el) => (
+            <React.Fragment key={el.id}>
               <Rect
-                x={card.x}
-                y={card.y}
+                x={el.x}
+                y={el.y}
                 width={100}
                 height={60}
-                fill="lightblue"
-                stroke="black"
+                fill={selectedId === el.id ? 'skyblue' : 'lightgray'}
+                stroke={selectedId === el.id ? 'blue' : 'black'}
+                strokeWidth={2}
                 cornerRadius={8}
                 draggable
+                onClick={() => onSelect(el.id)}
+                onTap={() => onSelect(el.id)}
+                onDragEnd={(e) => {
+                  onElementMove(el.id, e.target.x(), e.target.y());
+                }}
               />
               <Text
-                text={card.name}
-                x={card.x + 10}
-                y={card.y + 20}
+                text={el.name}
+                x={el.x + 10}
+                y={el.y + 20}
                 fontSize={16}
                 fill="black"
               />
             </React.Fragment>
           ))}
-
-          {spriteImage && (
-            <KonvaImage
-              image={spriteImage}
-              x={lionPos.x}
-              y={lionPos.y}
-              width={100}
-              height={100}
-              draggable
-              onDragEnd={(e) => {
-                setLionPos({
-                  x: e.target.x(),
-                  y: e.target.y(),
-                });
-              }}
-            />
-          )}
         </Layer>
       </Stage>
     </div>

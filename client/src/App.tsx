@@ -7,7 +7,6 @@ import ProfilePage from './pages/ProfilePage';
 import EditorPage from './pages/EditorPage';
 import GamesPage from './pages/GamesPage';
 import PrivateRoute from './components/Auth/PrivateRoute';
-import AdminRoute from './components/Auth/AdminRoute'; // if needed
 import { AuthProvider } from './context/AuthContext';
 
 const App: React.FC = () => {

@@ -1,18 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { login, user, role } = useAuth();
   const navigate = useNavigate();
+
+  // ✅ Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate(role === 'admin' ? '/admin' : '/profile');
+    }
+  }, [user, role, navigate]);
 
   const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const form = e.currentTarget;
     const email = (form.elements.namedItem('email') as HTMLInputElement).value;
-    const name = email.split('@')[0]; // crude name from email
-
+    const name = email.split('@')[0];
     const role = email.includes('admin') ? 'admin' : 'user';
 
     login('fake_token', role, name);

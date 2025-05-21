@@ -1,12 +1,13 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import ProfileLayout from '../components/Layout/ProfileLayout';
 
 const ProfilePage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // ✅ this replaces any localStorage/sessionStorage check
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 text-center px-4">

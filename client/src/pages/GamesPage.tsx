@@ -11,7 +11,13 @@ const GamesPage = () => {
       <Layout />
 
       {/* Game canvas */}
-      <GameCanvas />
+      <GameCanvas
+        elements={[]}
+        selectedId={null}
+        onSelect={() => {}}
+        onElementMove={() => {}}
+      />
+
     </div>
   );
 };
