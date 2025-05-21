@@ -7,14 +7,22 @@ interface RightPanelProps {
     type: 'card' | 'text' | 'token';
     x: number;
     y: number;
+    imageUrl?: string;
+    width?: number;
+    height?: number;
   } | null;
+
   onUpdate: (updated: Partial<{
     id: string;
     name: string;
     type: 'card' | 'text' | 'token';
     x: number;
     y: number;
+    imageUrl?: string;
+    width?: number;
+    height?: number;
   }>) => void;
+
   onClose: () => void;
 }
 
@@ -111,6 +119,27 @@ const RightPanel: React.FC<RightPanelProps> = ({
         ) : (
           <p className="text-gray-500 text-sm">No element selected</p>
         )}
+        {selectedElement?.type === 'token' && (
+          <div>
+            <label className="block font-medium text-gray-700">Upload Image</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = () => {
+                  onUpdate({ imageUrl: reader.result as string });
+                };
+                reader.readAsDataURL(file);
+              }}
+              className="mt-1 block text-sm"
+            />
+          </div>
+        )}
+
       </div>
     </div>
   );
