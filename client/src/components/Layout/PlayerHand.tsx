@@ -11,21 +11,21 @@ const PlayerHand: React.FC<PlayerHandProps> = ({ owner }) => {
   ? playerCards[owner]
   : [{ id: 1, name: 'Wood', count: 2 }];
 
-  const [newCardName, setNewCardName] = useState<string>('');
+  const [resourceName, setResourceName] = useState<string>('');
 
   const handleAdd = () => {
-    if (!newCardName.trim()) return;
+    if (!resourceName.trim()) return;
 
-    const exists = cards.some(card => card.name.toLowerCase() === newCardName.toLowerCase());
+    const exists = cards.some(card => card.name.toLowerCase() === resourceName.toLowerCase());
     if (exists) return;
 
     const newCard = {
       id: Date.now(),
-      name: newCardName,
+      name: resourceName,
       count: 1,
     };
     addCard(owner, newCard);
-    setNewCardName('');
+    setResourceName('');
   };
 
   return (
@@ -65,12 +65,13 @@ const PlayerHand: React.FC<PlayerHandProps> = ({ owner }) => {
 
 
       <div style={{ marginTop: '1rem' }}>
-        <input
-          type="text"
-          placeholder="New Resource Name"
-          value={newCardName}
-          onChange={e => setNewCardName(e.target.value)}
-        />
+      <input
+        type="text"
+        value={resourceName}
+        onChange={(e) => setResourceName(e.target.value)}
+        className="w-full border px-2 py-1 rounded text-sm"
+      />
+
         <button onClick={handleAdd} style={{ marginLeft: '0.5rem' }}>Add Resource</button>
       </div>
     </div>

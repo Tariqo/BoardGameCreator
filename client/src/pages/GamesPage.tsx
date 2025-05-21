@@ -1,6 +1,5 @@
 import React from 'react';
 import Layout from '../components/Layout/Layout'; // layout switcher + PlayerHand
-import GameCanvas from '../components/GameEditor/GameCanvas';
 
 const GamesPage = () => {
   return (
@@ -11,12 +10,6 @@ const GamesPage = () => {
       <Layout />
 
       {/* Game canvas */}
-      <GameCanvas
-        elements={[]}
-        selectedId={null}
-        onSelect={() => {}}
-        onElementMove={() => {}}
-      />
 
     </div>
   );

@@ -1,17 +1,13 @@
-// src/components/Auth/PrivateRoute.tsx
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
 
-  // ✅ If there's no user (e.g. session data missing), redirect to login
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  if (isLoading) return null; // Or a spinner
 
-  return <>{children}</>;
+  return user ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
 export default PrivateRoute;
