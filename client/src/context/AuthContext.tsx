@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AuthContextType {
-  user: string | null; // user name
+  user: string | null;
   role: 'admin' | 'user' | null;
+  isLoading: boolean;
   login: (token: string, role: 'admin' | 'user', name: string) => void;
   logout: () => void;
 }
@@ -10,20 +11,21 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<string | null>(null);
-    const [role, setRole] = useState<'admin' | 'user' | null>(null);
+  const [user, setUser] = useState<string | null>(null);
+  const [role, setRole] = useState<'admin' | 'user' | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
+  useEffect(() => {
     const token = sessionStorage.getItem('token');
     const savedRole = sessionStorage.getItem('role') as 'admin' | 'user' | null;
     const name = sessionStorage.getItem('name');
 
     if (token && name && savedRole) {
-        setUser(name);
-        setRole(savedRole);
+      setUser(name);
+      setRole(savedRole);
     }
-    }, []);
-
+    setIsLoading(false); // 🔑 done checking storage
+  }, []);
 
   const login = (token: string, userRole: 'admin' | 'user', name: string) => {
     sessionStorage.setItem('token', token);
@@ -42,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, login, logout }}>
+    <AuthContext.Provider value={{ user, role, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
