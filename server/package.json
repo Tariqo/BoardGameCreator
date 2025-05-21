@@ -23,7 +23,8 @@
     "express-fileupload": "^1.5.1",
     "express-rate-limit": "^7.5.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.14.1"
+    "mongoose": "^8.15.0",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

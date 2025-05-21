@@ -1,13 +1,23 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+// Define structure of the game state
+export interface GameState {
+  board: any[];        // Grid/tile structure
+  players: any[];      // Player info, e.g. { id, name, hand, position }
+  turn: number;        // Index of current player
+  phase: string;       // Game phase, e.g. 'main', 'draw'
+}
+
+// Project document interface
 export interface IProject extends Document {
   title: string;
-  gameState: any; // This will store the game state data
+  gameState: GameState;
   owner: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
 
+// Schema definition
 const projectSchema = new Schema<IProject>(
   {
     title: {
@@ -36,4 +46,5 @@ const projectSchema = new Schema<IProject>(
 projectSchema.index({ owner: 1 });
 projectSchema.index({ title: 1 });
 
-export const Project = mongoose.model<IProject>('Project', projectSchema); 
+// Export the model
+export const Project = mongoose.model<IProject>('Project', projectSchema);

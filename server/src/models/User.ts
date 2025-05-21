@@ -5,6 +5,7 @@ export interface IUser extends Document {
   email: string;
   username: string;
   password: string;
+  likedProjects: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -35,6 +36,11 @@ const userSchema = new Schema<IUser>(
       required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters long'],
     },
+    likedProjects: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Project',
+      default: [],
+    }],
   },
   {
     timestamps: true,

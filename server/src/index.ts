@@ -8,6 +8,8 @@ import userRoutes from './routes/userRoutes';
 import projectRoutes from './routes/projectRoutes';
 import assetRoutes from './routes/assetRoutes';
 import { errorHandler } from './middleware/errorHandler';
+import gameLogicRoutes from './routes/gameLogicRoutes';
+
 
 // Load environment variables
 dotenv.config();
@@ -31,7 +33,7 @@ app.use('/api/assets', assetRoutes);
 
 // Global error handler
 app.use(errorHandler);
-
+app.use('/api/game', gameLogicRoutes);
 // MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/tabletop-studio';
 

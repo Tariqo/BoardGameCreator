@@ -5,19 +5,27 @@ import {
   listProjects,
   getProject,
 } from '../controllers/projectController';
+import {
+  likeProject,
+  unlikeProject,
+  getLikedProjects,
+} from '../controllers/likeController';
 
 const router: Router = express.Router();
 
-// Apply authentication middleware to all project routes
+// Make sure user is logged in for all project routes
 router.use(authenticateToken);
 
-// Create a new project
-router.post('/', createProject);
+// Project management
+router.post('/', createProject);         // Create new project
+router.get('/', listProjects);          // Get all your projects
 
-// List all projects for the authenticated user
-router.get('/', listProjects);
+// Likes and favorites
+router.post('/like', likeProject);       // Add to liked projects
+router.get('/liked', getLikedProjects);  // View your liked projects
+router.delete('/like/:projectId', unlikeProject);  // Remove from liked projects
 
-// Get a specific project
-router.get('/:projectId', getProject);
+// Individual project access
+router.get('/:projectId', getProject);   // View specific project
 
 export default router; 
