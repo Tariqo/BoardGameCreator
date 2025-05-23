@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom';
 
 import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage'; // ✅ New import
 import ProfilePage from './pages/ProfilePage';
 import EditorPage from './pages/EditorPage';
 import GamesPage from './pages/GamesPage';
@@ -17,7 +18,7 @@ const TrackLastPath: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    if (location.pathname !== '/login') {
+    if (!['/login', '/signup'].includes(location.pathname)) {
       sessionStorage.setItem('lastPath', location.pathname);
     }
   }, [location]);
@@ -31,6 +32,7 @@ const AppRoutes: React.FC = () => (
     <Routes>
       <Route path="/games" element={<GamesPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} /> {/* ✅ New signup route */}
 
       <Route
         path="/profile"
@@ -50,7 +52,7 @@ const AppRoutes: React.FC = () => (
         }
       />
 
-      <Route path="*" element={<LoginPage />} />
+      <Route path="*" element={<GamesPage />} /> {/* 👈 Optional: default to GamesPage */}
     </Routes>
   </>
 );
