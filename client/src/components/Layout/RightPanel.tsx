@@ -1,4 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
+import EffectsEditor from '../GameEditor/EffectsEditor';
+import { Effect } from '../types/Effect'; 
 
 interface RightPanelProps {
   selectedElement: {
@@ -10,6 +12,7 @@ interface RightPanelProps {
     imageUrl?: string;
     width?: number;
     height?: number;
+    effects?: Effect[];
   } | null;
 
   onUpdate: (updated: Partial<{
@@ -21,6 +24,7 @@ interface RightPanelProps {
     imageUrl?: string;
     width?: number;
     height?: number;
+    effects?: Effect[];
   }>) => void;
 
   onClose: () => void;
@@ -115,31 +119,37 @@ const RightPanel: React.FC<RightPanelProps> = ({
                 y: {Math.round(selectedElement.y)}
               </div>
             </div>
+
+            {selectedElement.type !== 'text' && (
+              <EffectsEditor
+                effects={selectedElement.effects || []}
+                onChange={(updated) => onUpdate({ effects: updated })}
+              />
+            )}
+
+            {selectedElement.type === 'token' && (
+              <div>
+                <label className="block font-medium text-gray-700">Upload Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      onUpdate({ imageUrl: reader.result as string });
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="mt-1 block text-sm"
+                />
+              </div>
+            )}
           </div>
         ) : (
           <p className="text-gray-500 text-sm">No element selected</p>
         )}
-        {selectedElement?.type === 'token' && (
-          <div>
-            <label className="block font-medium text-gray-700">Upload Image</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = () => {
-                  onUpdate({ imageUrl: reader.result as string });
-                };
-                reader.readAsDataURL(file);
-              }}
-              className="mt-1 block text-sm"
-            />
-          </div>
-        )}
-
       </div>
     </div>
   );

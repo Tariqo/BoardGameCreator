@@ -1,11 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
 import PlayerHand from './PlayerHand';
+import RuleSetEditor, { RuleSet } from '../GameEditor/RuleSetEditor';
 import { useLayout } from '../../store/layoutStore';
 
 interface EditorSidebarProps {
   onAdd?: (type: 'card' | 'text' | 'token') => void;
   onUploadSprite: (src: string) => void;
-  onZoneModeChange?: (mode: 'draw' | 'discard' | null) => void; // ✅ new prop
+  onZoneModeChange?: (mode: 'draw' | 'discard' | null) => void;
+  onSaveGame: (ruleSet: RuleSet) => void;
 }
 
 interface UploadedImage {
@@ -18,6 +20,7 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
   onAdd,
   onUploadSprite,
   onZoneModeChange,
+  onSaveGame,
 }) => {
   const [width, setWidth] = useState(260);
   const [isResizing, setIsResizing] = useState(false);
@@ -36,6 +39,9 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
     addPlayer,
     maxPlayers,
     setMaxPlayers,
+    updatePlayerCard,
+    addPlayerRule,
+    removePlayerRule,
   } = useLayout();
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -88,15 +94,18 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
   };
 
   const handleImageDragStart = (e: React.DragEvent, image: UploadedImage) => {
-    e.dataTransfer.setData('application/json', JSON.stringify({
-      name: image.name,
-      type: 'token',
-      imageUrl: image.url,
-    }));
+    e.dataTransfer.setData(
+      'application/json',
+      JSON.stringify({
+        name: image.name,
+        type: 'token',
+        imageUrl: image.url,
+      })
+    );
   };
 
   const togglePlayer = (id: string) => {
-    setExpandedPlayers(prev => ({
+    setExpandedPlayers((prev) => ({
       ...prev,
       [id]: !prev[id],
     }));
@@ -120,13 +129,17 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
         <div className="flex gap-2">
           <button
             onClick={() => setGameplayMode('cards')}
-            className={`flex-1 px-2 py-1 rounded text-sm ${gameplayMode === 'cards' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            className={`flex-1 px-2 py-1 rounded text-sm ${
+              gameplayMode === 'cards' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+            }`}
           >
             Tile/Card
           </button>
           <button
             onClick={() => setGameplayMode('dice')}
-            className={`flex-1 px-2 py-1 rounded text-sm ${gameplayMode === 'dice' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            className={`flex-1 px-2 py-1 rounded text-sm ${
+              gameplayMode === 'dice' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+            }`}
           >
             Dice Rolls
           </button>
@@ -238,14 +251,35 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
             </button>
             {expandedPlayers[player.id] && (
               <div className="ml-2 mt-1">
-                <PlayerHand player={player} />
+                <PlayerHand
+                  player={player}
+                  onUpdateHand={(id, newHand) => {
+                    const updated = newHand.map((name, i) => ({
+                      id: Date.now() + i,
+                      name,
+                      count: 1,
+                    }));
+                    updated.forEach((card) => {
+                      updatePlayerCard(id, card.id, card.count);
+                    });
+                  }}
+                  onAddRule={addPlayerRule}
+                  onRemoveRule={removePlayerRule}
+                />
               </div>
             )}
           </div>
         ))}
       </div>
 
-      {/* Upload Button at Bottom */}
+      {/* Rule Set Editor */}
+      <RuleSetEditor
+        gameplayMode={gameplayMode}
+        maxPlayers={maxPlayers}
+        onSave={onSaveGame}
+      />
+
+      {/* Upload Button */}
       <div className="mt-auto pt-4 border-t">
         <button
           onClick={() => fileInputRef.current?.click()}

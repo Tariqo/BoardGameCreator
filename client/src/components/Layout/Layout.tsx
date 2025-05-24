@@ -10,6 +10,8 @@ const Layout: React.FC = () => {
     addPlayer,
     maxPlayers,
     setMaxPlayers,
+    addPlayerRule,
+    removePlayerRule,
   } = useLayout();
 
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -66,7 +68,16 @@ const Layout: React.FC = () => {
       {/* Render player hands */}
       <div style={{ display: 'flex', flexDirection, gap: '1rem', flexWrap: 'wrap' }}>
         {players.map((player) => (
-          <PlayerHand key={player.id} player={player} />
+          <PlayerHand
+            key={player.id}
+            player={player}
+            onUpdateHand={(id, newHand) => {
+              // Not implemented in your store yet: recommend adding replacePlayerHand() to handle this.
+              console.warn('onUpdateHand is triggered, but replacePlayerHand is not implemented.');
+            }}
+            onAddRule={addPlayerRule}
+            onRemoveRule={removePlayerRule}
+          />
         ))}
       </div>
     </div>

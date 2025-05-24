@@ -1,5 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Stage, Layer, Rect, Text, Group, Image as KonvaImage, Transformer } from 'react-konva';
+import {
+  Stage,
+  Layer,
+  Rect,
+  Text,
+  Group,
+  Image as KonvaImage,
+  Transformer,
+} from 'react-konva';
 
 type ZoneMode = 'draw' | 'discard' | null;
 type PileCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
@@ -28,11 +36,13 @@ interface GameCanvasProps {
   panelVisible: boolean;
   zoneMode?: ZoneMode;
   setZoneMode?: (mode: ZoneMode) => void;
+  showGrid?: boolean;
 }
 
 const BASE_WIDTH = 1600;
 const BASE_HEIGHT = 800;
 const ZONE_SIZE = 120;
+const GRID_SIZE = 40;
 
 const GameCanvas: React.FC<GameCanvasProps> = ({
   elements,
@@ -44,6 +54,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   panelVisible,
   zoneMode,
   setZoneMode,
+  showGrid,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
@@ -105,12 +116,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     try {
       const raw = e.dataTransfer.getData('application/json');
       const dropped = JSON.parse(raw);
-      const newEl: CanvasElement = {
-        ...dropped,
-        id: Date.now().toString(),
-        x,
-        y,
-      };
       onElementDrop?.(dropped, { x, y });
     } catch {
       console.error('Invalid drop');
@@ -181,12 +186,28 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     });
   };
 
+  const renderGridLines = () => {
+    if (!showGrid) return null;
+    const lines = [];
+
+    for (let i = GRID_SIZE; i < BASE_WIDTH; i += GRID_SIZE) {
+      lines.push(<Rect key={`v-${i}`} x={i} y={0} width={1} height={BASE_HEIGHT} fill="#eee" />);
+    }
+
+    for (let j = GRID_SIZE; j < BASE_HEIGHT; j += GRID_SIZE) {
+      lines.push(<Rect key={`h-${j}`} x={0} y={j} width={BASE_WIDTH} height={1} fill="#eee" />);
+    }
+
+    return lines;
+  };
+
   return (
     <div
       ref={containerRef}
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
-      className="w-full h-full relative bg-gray-100"
+      className="w-full h-full bg-gray-100"
+      style={{ overflow: 'hidden' }}
     >
       <Stage
         ref={stageRef}
@@ -197,6 +218,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         style={{ transformOrigin: 'top left' }}
       >
         <Layer ref={layerRef}>
+          {/* Background */}
           <Rect
             x={0}
             y={0}
@@ -208,6 +230,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             cornerRadius={8}
             listening={false}
           />
+
+          {/* Clear selection area */}
           <Rect
             x={0}
             y={0}
@@ -218,10 +242,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             onTap={() => onSelect(null)}
           />
 
+          {renderGridLines()}
           {renderZoneHighlight()}
 
+          {/* Elements */}
           {elements.map((el) => {
             const isSelected = el.id === selectedId;
+
             if (el.imageUrl && imageCache[el.id]) {
               const img = imageCache[el.id];
               const width = el.width || img.width || 100;
@@ -254,10 +281,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                     const newWidth = Math.max(20, node.width() * scaleX);
                     const newHeight = Math.max(20, node.height() * scaleY);
                     updateElement(el.id, { width: newWidth, height: newHeight });
-                    if (trRef.current) {
-                      trRef.current.nodes([node]);
-                      trRef.current.getLayer().batchDraw();
-                    }
                   }}
                 />
               );

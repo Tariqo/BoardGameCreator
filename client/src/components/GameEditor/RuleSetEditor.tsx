@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import EffectsEditor from './EffectsEditor';
+import ConditionsEditor, { Condition } from './ConditionsEditor';
 import { Effect } from '../types/Effect';
 
 export type RuleSet = {
@@ -9,8 +10,8 @@ export type RuleSet = {
   maxPlayers: number;
   teamCount: number;
   playersPerTeam: number;
-  winCondition: string;
-  eliminationCondition: string;
+  winConditions: Condition[];
+  eliminationConditions: Condition[];
   actions: string[];
   tags: string[];
   turnEffects: Effect[];
@@ -30,8 +31,6 @@ const RuleSetEditor: React.FC<RuleSetEditorProps> = ({
   onSave,
 }) => {
   const [ruleSetName, setRuleSetName] = useState('');
-  const [winCondition, setWinCondition] = useState('');
-  const [eliminationCondition, setEliminationCondition] = useState('');
   const [teamCount, setTeamCount] = useState(2);
   const [playersPerTeam, setPlayersPerTeam] = useState(1);
   const [tags, setTags] = useState<string[]>([]);
@@ -41,6 +40,9 @@ const RuleSetEditor: React.FC<RuleSetEditorProps> = ({
   const [handInput, setHandInput] = useState('');
   const [initialHandCount, setInitialHandCount] = useState<number>(0);
 
+  const [winConditions, setWinConditions] = useState<Condition[]>([]);
+  const [eliminationConditions, setEliminationConditions] = useState<Condition[]>([]);
+
   const handleSave = () => {
     const ruleSet: RuleSet = {
       id: crypto.randomUUID(),
@@ -49,8 +51,8 @@ const RuleSetEditor: React.FC<RuleSetEditorProps> = ({
       maxPlayers,
       teamCount,
       playersPerTeam,
-      winCondition,
-      eliminationCondition,
+      winConditions,
+      eliminationConditions,
       actions: [],
       tags,
       turnEffects,
@@ -93,25 +95,17 @@ const RuleSetEditor: React.FC<RuleSetEditorProps> = ({
         />
       </div>
 
-      <div>
-        <label className="text-xs text-gray-600 block mb-1">Win Condition</label>
-        <input
-          type="text"
-          value={winCondition}
-          onChange={(e) => setWinCondition(e.target.value)}
-          className="w-full border px-2 py-1 text-sm rounded"
-        />
-      </div>
+      <ConditionsEditor
+        title="Win Conditions"
+        conditions={winConditions}
+        onChange={setWinConditions}
+      />
 
-      <div>
-        <label className="text-xs text-gray-600 block mb-1">Elimination Condition</label>
-        <input
-          type="text"
-          value={eliminationCondition}
-          onChange={(e) => setEliminationCondition(e.target.value)}
-          className="w-full border px-2 py-1 text-sm rounded"
-        />
-      </div>
+      <ConditionsEditor
+        title="Elimination Conditions"
+        conditions={eliminationConditions}
+        onChange={setEliminationConditions}
+      />
 
       <div>
         <label className="text-xs text-gray-600 block mb-1">Number of Teams</label>

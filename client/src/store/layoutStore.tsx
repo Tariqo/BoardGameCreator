@@ -1,23 +1,20 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-// Layout types
 type LayoutType = 'layout1' | 'layout2';
 
-// Card structure
 export interface Card {
   id: number;
   name: string;
   count: number;
 }
 
-// Player structure
 export interface Player {
   id: string;
   name: string;
   hand: Card[];
+  rules: string[];
 }
 
-// Context type
 interface LayoutContextProps {
   currentLayout: LayoutType;
   setLayout: (layout: LayoutType) => void;
@@ -28,22 +25,24 @@ interface LayoutContextProps {
   addCardToPlayer: (playerId: string, card: Card) => void;
   updatePlayerCard: (playerId: string, cardId: number, delta: number) => void;
   removePlayerCard: (playerId: string, cardId: number) => void;
+  replacePlayerHand: (playerId: string, newHand: Card[]) => void;
 
   drawPile: Card[];
   discardPile: Card[];
   drawCard: (playerId: string) => void;
   playCard: (playerId: string, cardId: number) => void;
 
+  addPlayerRule: (playerId: string, rule: string) => void;
+  removePlayerRule: (playerId: string, ruleIndex: number) => void;
+
   maxPlayers: number;
   setMaxPlayers: (count: number) => void;
 }
 
-// Provider props
 interface LayoutProviderProps {
   children: ReactNode;
 }
 
-// Create context
 const LayoutContext = createContext<LayoutContextProps | undefined>(undefined);
 
 export const LayoutProvider: React.FC<LayoutProviderProps> = ({ children }) => {
@@ -61,7 +60,7 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({ children }) => {
     if (players.length >= maxPlayers) return;
     setPlayers((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), name, hand: [] },
+      { id: crypto.randomUUID(), name, hand: [], rules: [] },
     ]);
   };
 
@@ -77,11 +76,7 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({ children }) => {
     );
   };
 
-  const updatePlayerCard = (
-    playerId: string,
-    cardId: number,
-    delta: number
-  ) => {
+  const updatePlayerCard = (playerId: string, cardId: number, delta: number) => {
     setPlayers((prev) =>
       prev.map((p) =>
         p.id === playerId
@@ -108,6 +103,14 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({ children }) => {
     );
   };
 
+  const replacePlayerHand = (playerId: string, newHand: Card[]) => {
+    setPlayers((prev) =>
+      prev.map((p) =>
+        p.id === playerId ? { ...p, hand: newHand } : p
+      )
+    );
+  };
+
   const drawCard = (playerId: string) => {
     if (drawPile.length === 0) return;
     const [topCard, ...rest] = drawPile;
@@ -126,6 +129,24 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({ children }) => {
     setDiscardPile((prev) => [card, ...prev]);
   };
 
+  const addPlayerRule = (playerId: string, rule: string) => {
+    setPlayers((prev) =>
+      prev.map((p) =>
+        p.id === playerId ? { ...p, rules: [...p.rules, rule] } : p
+      )
+    );
+  };
+
+  const removePlayerRule = (playerId: string, ruleIndex: number) => {
+    setPlayers((prev) =>
+      prev.map((p) =>
+        p.id === playerId
+          ? { ...p, rules: p.rules.filter((_, i) => i !== ruleIndex) }
+          : p
+      )
+    );
+  };
+
   return (
     <LayoutContext.Provider
       value={{
@@ -137,10 +158,13 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({ children }) => {
         addCardToPlayer,
         updatePlayerCard,
         removePlayerCard,
+        replacePlayerHand,
         drawPile,
         discardPile,
         drawCard,
         playCard,
+        addPlayerRule,
+        removePlayerRule,
         maxPlayers,
         setMaxPlayers,
       }}
