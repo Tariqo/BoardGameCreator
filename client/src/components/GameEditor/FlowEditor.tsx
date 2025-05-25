@@ -26,22 +26,25 @@ const FlowEditor: React.FC<FlowEditorProps> = ({ flow, setFlow, onClose }) => {
   const AVAILABLE_STEPS = ['draw card', 'play card', 'check win/loss'];
 
   useEffect(() => {
-    const startNode: FlowStep = {
-      id: 'start-turn',
-      label: 'start turn',
-      x: 50,
-      y: 180,
-      locked: true,
-    };
-    const endNode: FlowStep = {
-      id: 'end-turn',
-      label: 'end turn',
-      x: 1000,
-      y: 180,
-      locked: true,
-    };
-    setFlow([startNode, endNode]);
+    if (flow.length === 0) {
+      const startNode: FlowStep = {
+        id: 'start-turn',
+        label: 'start turn',
+        x: 50,
+        y: 180,
+        locked: true,
+      };
+      const endNode: FlowStep = {
+        id: 'end-turn',
+        label: 'end turn',
+        x: 1000,
+        y: 180,
+        locked: true,
+      };
+      setFlow([startNode, endNode]);
+    }
   }, []);
+
 
   const addStep = (label: string) => {
     const newStep: FlowStep = {
@@ -239,8 +242,20 @@ const FlowEditor: React.FC<FlowEditorProps> = ({ flow, setFlow, onClose }) => {
             className="absolute border px-4 py-2 rounded shadow text-sm select-none z-10 bg-white"
             style={{ left: step.x, top: step.y }}
           >
-            <div className="relative w-max">
+            <div className="relative w-max flex items-center gap-2">
               {step.label}
+              {!step.locked && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFlow(prev => prev.filter(s => s.id !== step.id));
+                  }}
+                  className="text-red-500 text-xs hover:underline"
+                  title="Delete step"
+                >
+                  ✕
+                </button>
+              )}
               {step.id !== 'end-turn' && (
                 <div
                   className="absolute right-[-12px] top-1/2 transform -translate-y-1/2 w-3 h-3 bg-blue-500 rounded-full cursor-pointer z-20"

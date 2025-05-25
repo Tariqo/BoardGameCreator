@@ -15,33 +15,32 @@ export type RuleSet = {
   actions: string[];
   tags: string[];
   turnEffects: Effect[];
-  initialHand: string[];
+  initialHand: string[]; // You may remove this in the future
   initialHandCount?: number;
 };
 
 interface RuleSetEditorProps {
   gameplayMode: 'cards' | 'dice';
   maxPlayers: number;
+  useTeams: boolean;
+  tags: string[];
   onSave: (ruleSet: RuleSet) => void;
 }
 
 const RuleSetEditor: React.FC<RuleSetEditorProps> = ({
   gameplayMode,
   maxPlayers,
+  useTeams: initialUseTeams,
+  tags,
   onSave,
 }) => {
   const [ruleSetName, setRuleSetName] = useState('');
-  const [teamCount, setTeamCount] = useState(2);
-  const [playersPerTeam, setPlayersPerTeam] = useState(1);
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
-  const [turnEffects, setTurnEffects] = useState<Effect[]>([]);
-  const [initialHand, setInitialHand] = useState<string[]>([]);
-  const [handInput, setHandInput] = useState('');
-  const [initialHandCount, setInitialHandCount] = useState<number>(0);
-
   const [winConditions, setWinConditions] = useState<Condition[]>([]);
   const [eliminationConditions, setEliminationConditions] = useState<Condition[]>([]);
+  const [teamCount, setTeamCount] = useState(2);
+  const [playersPerTeam, setPlayersPerTeam] = useState(1);
+  const [initialHandCount, setInitialHandCount] = useState<number>(0);
+  const [useTeams, setUseTeams] = useState(initialUseTeams);
 
   const handleSave = () => {
     const ruleSet: RuleSet = {
@@ -49,36 +48,17 @@ const RuleSetEditor: React.FC<RuleSetEditorProps> = ({
       name: ruleSetName,
       gameplayMode,
       maxPlayers,
-      teamCount,
-      playersPerTeam,
+      teamCount: useTeams ? teamCount : 0,
+      playersPerTeam: useTeams ? playersPerTeam : 0,
       winConditions,
       eliminationConditions,
       actions: [],
       tags,
-      turnEffects,
-      initialHand,
+      turnEffects: [],
+      initialHand: [],
       initialHandCount,
     };
     onSave(ruleSet);
-  };
-
-  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && tagInput.trim()) {
-      e.preventDefault();
-      const newTag = tagInput.trim();
-      if (!tags.includes(newTag)) {
-        setTags((prev) => [...prev, newTag]);
-      }
-      setTagInput('');
-    }
-  };
-
-  const handleAddHandCard = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && handInput.trim()) {
-      e.preventDefault();
-      setInitialHand((prev) => [...prev, handInput.trim()]);
-      setHandInput('');
-    }
   };
 
   return (
@@ -107,77 +87,46 @@ const RuleSetEditor: React.FC<RuleSetEditorProps> = ({
         onChange={setEliminationConditions}
       />
 
+      {/* Toggle Teams */}
       <div>
-        <label className="text-xs text-gray-600 block mb-1">Number of Teams</label>
-        <input
-          type="number"
-          value={teamCount}
-          onChange={(e) => setTeamCount(Number(e.target.value))}
-          className="w-full border px-2 py-1 text-sm rounded"
-          min={1}
-        />
+        <button
+          onClick={() => setUseTeams(!useTeams)}
+          className={`w-full px-3 py-2 rounded text-sm font-medium ${
+            useTeams ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+          }`}
+        >
+          {useTeams ? 'Disable Teams' : 'Enable Teams'}
+        </button>
       </div>
 
-      <div>
-        <label className="text-xs text-gray-600 block mb-1">Players Per Team</label>
-        <input
-          type="number"
-          value={playersPerTeam}
-          onChange={(e) => setPlayersPerTeam(Number(e.target.value))}
-          className="w-full border px-2 py-1 text-sm rounded"
-          min={1}
-        />
-      </div>
+      {useTeams && (
+        <>
+          <div>
+            <label className="text-xs text-gray-600 block mb-1">Number of Teams</label>
+            <input
+              type="number"
+              value={teamCount}
+              onChange={(e) => setTeamCount(Number(e.target.value))}
+              className="w-full border px-2 py-1 text-sm rounded"
+              min={1}
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-600 block mb-1">Players Per Team</label>
+            <input
+              type="number"
+              value={playersPerTeam}
+              onChange={(e) => setPlayersPerTeam(Number(e.target.value))}
+              className="w-full border px-2 py-1 text-sm rounded"
+              min={1}
+            />
+          </div>
+        </>
+      )}
 
       <div>
-        <label className="text-xs text-gray-600 block mb-1">Tags (press Enter to add)</label>
-        <input
-          type="text"
-          value={tagInput}
-          onChange={(e) => setTagInput(e.target.value)}
-          onKeyDown={handleAddTag}
-          className="w-full border px-2 py-1 text-sm rounded"
-        />
-        <div className="flex flex-wrap gap-1 mt-1">
-          {tags.map((tag, index) => (
-            <span
-              key={index}
-              className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <label className="text-xs text-gray-600 block mb-1">Player Turn Effects</label>
-        <EffectsEditor effects={turnEffects} onChange={setTurnEffects} />
-      </div>
-
-      <div>
-        <label className="text-xs text-gray-600 block mb-1">Initial Hand (Enter to add)</label>
-        <input
-          type="text"
-          value={handInput}
-          onChange={(e) => setHandInput(e.target.value)}
-          onKeyDown={handleAddHandCard}
-          className="w-full border px-2 py-1 text-sm rounded"
-        />
-        <div className="flex flex-wrap gap-1 mt-1">
-          {initialHand.map((card, i) => (
-            <span
-              key={i}
-              className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full"
-            >
-              {card}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <label className="text-xs text-gray-600 block mb-1">Initial Hand Card Count (Optional)</label>
+        <label className="text-xs text-gray-600 block mb-1">Initial Hand Card Count</label>
         <input
           type="number"
           value={initialHandCount}

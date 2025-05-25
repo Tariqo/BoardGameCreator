@@ -2,17 +2,8 @@ import download from 'downloadjs';
 import { RuleSet } from '../../components/GameEditor/RuleSetEditor';
 import { FlowStep } from '../../components/GameEditor/FlowEditor';
 import { Card } from '../../components/GameEditor/DeckBuilder';
-
-export interface BoardElement {
-  id: string;
-  name: string;
-  type: 'card' | 'text' | 'token';
-  x: number;
-  y: number;
-  imageUrl?: string;
-  width?: number;
-  height?: number;
-}
+import { BoardElement } from '../types/BoardElement';
+export type { BoardElement } from '../types/BoardElement';
 
 interface PublishParams {
   ruleSet: RuleSet;
