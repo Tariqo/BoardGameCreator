@@ -1,19 +1,17 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Stage, Layer, Rect, Text, Group, Image as KonvaImage, Transformer } from 'react-konva';
+import {
+  Stage,
+  Layer,
+  Rect,
+  Text,
+  Group,
+  Image as KonvaImage,
+  Transformer,
+} from 'react-konva';
+import { BoardElement as CanvasElement } from '../types/BoardElement';
 
 type ZoneMode = 'draw' | 'discard' | null;
 type PileCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-
-type CanvasElement = {
-  id: string;
-  name: string;
-  type: 'card' | 'text' | 'token';
-  x: number;
-  y: number;
-  imageUrl?: string;
-  width?: number;
-  height?: number;
-};
 
 interface GameCanvasProps {
   elements: CanvasElement[];
@@ -28,11 +26,13 @@ interface GameCanvasProps {
   panelVisible: boolean;
   zoneMode?: ZoneMode;
   setZoneMode?: (mode: ZoneMode) => void;
+  showGrid?: boolean;
 }
 
 const BASE_WIDTH = 1600;
 const BASE_HEIGHT = 800;
 const ZONE_SIZE = 120;
+const GRID_SIZE = 40;
 
 const GameCanvas: React.FC<GameCanvasProps> = ({
   elements,
@@ -44,6 +44,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   panelVisible,
   zoneMode,
   setZoneMode,
+  showGrid,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
@@ -51,8 +52,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const trRef = useRef<any>(null);
   const [scale, setScale] = useState(1);
   const [imageCache, setImageCache] = useState<Record<string, HTMLImageElement>>({});
-  const [drawPileCorner, setDrawPileCorner] = useState<PileCorner | null>(null);
-  const [discardPileCorner, setDiscardPileCorner] = useState<PileCorner | null>(null);
 
   useEffect(() => {
     const resize = () => {
@@ -105,80 +104,32 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     try {
       const raw = e.dataTransfer.getData('application/json');
       const dropped = JSON.parse(raw);
-      const newEl: CanvasElement = {
-        ...dropped,
-        id: Date.now().toString(),
-        x,
-        y,
-      };
+
+      // Remove existing zone of same type
+      if (['drawZone', 'discardZone', 'placementZone'].includes(dropped.type)) {
+        const existing = elements.find((el) => el.type === dropped.type);
+        if (existing) {
+          onSelect(null);
+          updateElement(existing.id, { x: -9999, y: -9999 });
+        }
+      }
+
       onElementDrop?.(dropped, { x, y });
     } catch {
       console.error('Invalid drop');
     }
   };
 
-  const renderZoneHighlight = () => {
-    if (!zoneMode) return null;
-
-    const zones: { x: number; y: number; label: PileCorner }[] = [
-      { x: 0, y: 0, label: 'top-left' },
-      { x: BASE_WIDTH - ZONE_SIZE, y: 0, label: 'top-right' },
-      { x: 0, y: BASE_HEIGHT - ZONE_SIZE, label: 'bottom-left' },
-      { x: BASE_WIDTH - ZONE_SIZE, y: BASE_HEIGHT - ZONE_SIZE, label: 'bottom-right' },
-    ];
-
-    return zones.map((zone, idx) => {
-      const isActive =
-        (zoneMode === 'draw' && drawPileCorner === zone.label) ||
-        (zoneMode === 'discard' && discardPileCorner === zone.label);
-
-      const isDisabled =
-        (zoneMode === 'draw' && discardPileCorner === zone.label) ||
-        (zoneMode === 'discard' && drawPileCorner === zone.label);
-
-      return (
-        <Group
-          key={idx}
-          onClick={() => {
-            if (isDisabled) return;
-            if (zoneMode === 'draw') setDrawPileCorner(zone.label);
-            if (zoneMode === 'discard') setDiscardPileCorner(zone.label);
-            setZoneMode?.(null);
-          }}
-        >
-          <Rect
-            x={zone.x}
-            y={zone.y}
-            width={ZONE_SIZE}
-            height={ZONE_SIZE}
-            stroke={
-              isDisabled
-                ? 'gray'
-                : zoneMode === 'draw'
-                ? 'green'
-                : 'orange'
-            }
-            strokeWidth={isActive ? 6 : 4}
-            dash={[10, 6]}
-          />
-          <Text
-            text={
-              zoneMode === 'draw'
-                ? isActive
-                  ? 'Draw Pile (✓)'
-                  : 'Draw Pile'
-                : isActive
-                ? 'Discard Pile (✓)'
-                : 'Discard Pile'
-            }
-            x={zone.x + 6}
-            y={zone.y + 6}
-            fontSize={12}
-            fill={isDisabled ? 'gray' : zoneMode === 'draw' ? 'green' : 'orange'}
-          />
-        </Group>
-      );
-    });
+  const renderGridLines = () => {
+    if (!showGrid) return null;
+    const lines = [];
+    for (let i = GRID_SIZE; i < BASE_WIDTH; i += GRID_SIZE) {
+      lines.push(<Rect key={`v-${i}`} x={i} y={0} width={1} height={BASE_HEIGHT} fill="#eee" />);
+    }
+    for (let j = GRID_SIZE; j < BASE_HEIGHT; j += GRID_SIZE) {
+      lines.push(<Rect key={`h-${j}`} x={0} y={j} width={BASE_WIDTH} height={1} fill="#eee" />);
+    }
+    return lines;
   };
 
   return (
@@ -186,7 +137,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       ref={containerRef}
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
-      className="w-full h-full relative bg-gray-100"
+      className="w-full h-full bg-gray-100"
+      style={{ overflow: 'hidden' }}
     >
       <Stage
         ref={stageRef}
@@ -208,6 +160,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             cornerRadius={8}
             listening={false}
           />
+
           <Rect
             x={0}
             y={0}
@@ -218,10 +171,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             onTap={() => onSelect(null)}
           />
 
-          {renderZoneHighlight()}
+          {renderGridLines()}
 
           {elements.map((el) => {
             const isSelected = el.id === selectedId;
+
             if (el.imageUrl && imageCache[el.id]) {
               const img = imageCache[el.id];
               const width = el.width || img.width || 100;
@@ -254,14 +208,21 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                     const newWidth = Math.max(20, node.width() * scaleX);
                     const newHeight = Math.max(20, node.height() * scaleY);
                     updateElement(el.id, { width: newWidth, height: newHeight });
-                    if (trRef.current) {
-                      trRef.current.nodes([node]);
-                      trRef.current.getLayer().batchDraw();
-                    }
                   }}
                 />
               );
             }
+
+            const colorMap: Record<string, { fill: string; stroke: string }> = {
+              drawZone: { fill: '#bbf7d0', stroke: '#15803d' },
+              discardZone: { fill: '#fef9c3', stroke: '#ca8a04' },
+              placementZone: { fill: '#e9d5ff', stroke: '#7e22ce' },
+            };
+
+            const zone = colorMap[el.type] || {
+              fill: isSelected ? 'skyblue' : 'lightgray',
+              stroke: isSelected ? 'blue' : 'black',
+            };
 
             return (
               <Group
@@ -280,14 +241,23 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                 }}
               >
                 <Rect
-                  width={100}
-                  height={60}
-                  fill={isSelected ? 'skyblue' : 'lightgray'}
-                  stroke={isSelected ? 'blue' : 'black'}
+                  width={el.width || 100}
+                  height={el.height || 60}
+                  fill={zone.fill}
+                  stroke={zone.stroke}
                   strokeWidth={2}
                   cornerRadius={8}
                 />
-                <Text text={el.name} x={10} y={20} fontSize={16} fill="black" />
+                <Text
+                  text={el.name}
+                  fontSize={Math.min((el.width || 100) / 10, 22)}
+                  align="center"
+                  verticalAlign="middle"
+                  width={el.width || 100}
+                  height={el.height || 60}
+                  padding={10}
+                  fill="black"
+                />
               </Group>
             );
           })}

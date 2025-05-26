@@ -8,6 +8,7 @@ import {
   User,
   LogOut,
   Gamepad2,
+  Save,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -15,11 +16,19 @@ import { useNavigate } from 'react-router-dom';
 interface EditorTopbarProps {
   isRightPanelVisible: boolean;
   onToggleRightPanel: () => void;
+  onToggleGrid: () => void;
+  onSaveGame: () => void;
+  onToggleDeckBuilder: () => void; // ✅ Add this line
+  onToggleFlowEditor: () => void;
 }
 
 const EditorTopbar: React.FC<EditorTopbarProps> = ({
   isRightPanelVisible,
   onToggleRightPanel,
+  onToggleGrid,
+  onSaveGame,
+  onToggleDeckBuilder, // ✅ Include this here too
+  onToggleFlowEditor,
 }) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
@@ -40,15 +49,17 @@ const EditorTopbar: React.FC<EditorTopbarProps> = ({
     <header className="h-14 px-4 border-b border-gray-300 flex items-center justify-between bg-gray-100">
       {/* Left toolbar group */}
       <div className="flex gap-4 items-center">
-        <ToolbarButton icon={<Ruler size={18} />} label="Grid" />
+        <ToolbarButton icon={<Ruler size={18} />} label="Grid" onClick={onToggleGrid} />
+        <ToolbarButton icon={<Gamepad2 size={18} />} label="Deck Builder" onClick={onToggleDeckBuilder} />
+        <ToolbarButton icon={<SlidersHorizontal size={18} />} label="Flow Editor" onClick={onToggleFlowEditor} />
         <ToolbarButton icon={<Palette size={18} />} label="Style" />
         <ToolbarButton icon={<Text size={18} />} label="Text" />
         <ToolbarButton icon={<SlidersHorizontal size={18} />} label="Adjust" />
+        <ToolbarButton icon={<Save size={18} />} label="Save Game" onClick={onSaveGame} />
       </div>
 
       {/* Right controls */}
       <div className="flex items-center gap-4">
-        {/* Show/Hide Settings */}
         <button
           onClick={onToggleRightPanel}
           className="flex items-center gap-2 text-sm text-gray-700 border px-3 py-1.5 rounded hover:bg-white shadow-sm"
@@ -57,7 +68,6 @@ const EditorTopbar: React.FC<EditorTopbarProps> = ({
           {isRightPanelVisible ? 'Hide Settings' : 'Show Settings'}
         </button>
 
-        {/* Profile Dropdown */}
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setOpen(!open)}
@@ -95,12 +105,14 @@ const EditorTopbar: React.FC<EditorTopbarProps> = ({
   );
 };
 
-const ToolbarButton: React.FC<{ icon: React.ReactNode; label: string }> = ({
+const ToolbarButton: React.FC<{ icon: React.ReactNode; label: string; onClick?: () => void }> = ({
   icon,
   label,
+  onClick,
 }) => {
   return (
     <button
+      onClick={onClick}
       className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-white border border-transparent rounded-md hover:border-gray-300 transition"
       title={label}
     >

@@ -12,6 +12,7 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@types/react-router-dom": "^5.3.3",
+    "downloadjs": "^1.4.7",
     "konva": "^9.3.20",
     "lucide-react": "^0.511.0",
     "react": "^19.1.0",
