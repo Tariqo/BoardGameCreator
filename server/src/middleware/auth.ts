@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import cookie from 'cookie';
 import { User } from '../models/User';
 
 // Extend Express Request to include userId and optional full user
@@ -7,18 +8,19 @@ declare global {
   namespace Express {
     interface Request {
       userId?: string;
-      user?: any; // We'll populate this with the full user object when needed
+      user?: any;
     }
   }
 }
 
+// ✅ Reads token from HttpOnly cookie, not header
 export const authenticateToken = (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+): void => {
+  const cookies = cookie.parse(req.headers.cookie || '');
+  const token = cookies.token;
 
   if (!token) {
     res.status(401).json({
@@ -46,7 +48,7 @@ export const authenticateToken = (
   });
 };
 
-// Optional middleware to attach full user object
+// ✅ Optional: Attach full user object if needed
 export const attachUser = async (
   req: Request,
   res: Response,
@@ -54,20 +56,18 @@ export const attachUser = async (
 ) => {
   try {
     if (!req.userId) {
-      res.status(401).json({
+      return res.status(401).json({
         success: false,
         message: 'User not authenticated',
       });
-      return;
     }
 
     const user = await User.findById(req.userId).select('-password');
     if (!user) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: 'User not found',
       });
-      return;
     }
 
     req.user = user;
