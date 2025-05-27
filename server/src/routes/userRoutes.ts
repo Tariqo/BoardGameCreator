@@ -1,16 +1,23 @@
 import express from 'express';
-import { getProfile, updateProfile } from '../controllers/userController';
+import {
+  getProfile,
+  updateProfile,
+  getMe,
+} from '../controllers/userController';
 import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 
-// Apply authentication middleware to all routes
+// ✅ Apply authentication to all user routes
 router.use(authenticateToken);
 
-// Get user profile
+// ✅ Return full user session info (used on refresh)
+router.get('/me', getMe);
+
+// ✅ Get user profile (custom view/edit profile)
 router.get('/profile', getProfile);
 
-// Update user profile
+// ✅ Update user profile info
 router.put('/profile', updateProfile);
 
-export default router; 
+export default router;
