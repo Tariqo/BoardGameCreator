@@ -11,6 +11,7 @@ import SignupPage from './pages/SignupPage'; // ✅ New import
 import ProfilePage from './pages/ProfilePage';
 import EditorPage from './pages/EditorPage';
 import GamesPage from './pages/GamesPage';
+import PlayPage from './pages/PlayPage';
 import PrivateRoute from './components/Auth/PrivateRoute';
 import { AuthProvider } from './context/AuthContext';
 
@@ -32,7 +33,7 @@ const AppRoutes: React.FC = () => (
     <Routes>
       <Route path="/games" element={<GamesPage />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} /> {/* ✅ New signup route */}
+      <Route path="/signup" element={<SignupPage />} />
 
       <Route
         path="/profile"
@@ -51,11 +52,13 @@ const AppRoutes: React.FC = () => (
           </PrivateRoute>
         }
       />
-
-      <Route path="*" element={<GamesPage />} /> {/* 👈 Optional: default to GamesPage */}
+      <Route path="/play" element={<PlayPage />} />
+      <Route path="/play/session/:sessionId" element={<PlayPage />} />
+      <Route path="*" element={<GamesPage />} />
     </Routes>
   </>
 );
+
 
 const App: React.FC = () => {
   return (

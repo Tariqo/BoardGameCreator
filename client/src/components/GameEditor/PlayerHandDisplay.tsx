@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card } from './DeckBuilder';
+import  { Card } from '../../types/Card';
 
 interface PlayerHandDisplayProps {
   cards: Card[];

@@ -8,10 +8,9 @@ import {
   Image as KonvaImage,
   Transformer,
 } from 'react-konva';
-import { BoardElement as CanvasElement } from '../types/BoardElement';
+import { BoardElement as CanvasElement } from '../../types/BoardElement';
 
 type ZoneMode = 'draw' | 'discard' | null;
-type PileCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 interface GameCanvasProps {
   elements: CanvasElement[];
@@ -29,9 +28,6 @@ interface GameCanvasProps {
   showGrid?: boolean;
 }
 
-const BASE_WIDTH = 1600;
-const BASE_HEIGHT = 800;
-const ZONE_SIZE = 120;
 const GRID_SIZE = 40;
 
 const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -50,15 +46,14 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const stageRef = useRef<any>(null);
   const layerRef = useRef<any>(null);
   const trRef = useRef<any>(null);
-  const [scale, setScale] = useState(1);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [imageCache, setImageCache] = useState<Record<string, HTMLImageElement>>({});
 
   useEffect(() => {
     const resize = () => {
       if (containerRef.current) {
-        const { offsetWidth } = containerRef.current;
-        const newScale = offsetWidth / BASE_WIDTH;
-        setScale(newScale);
+        const { offsetWidth, offsetHeight } = containerRef.current;
+        setContainerSize({ width: offsetWidth, height: offsetHeight });
       }
     };
     resize();
@@ -99,13 +94,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const stage = stageRef.current;
     if (!stage) return;
     const stageBox = stage.container().getBoundingClientRect();
-    const x = (e.clientX - stageBox.left) / scale;
-    const y = (e.clientY - stageBox.top) / scale;
+    const x = e.clientX - stageBox.left;
+    const y = e.clientY - stageBox.top;
     try {
       const raw = e.dataTransfer.getData('application/json');
       const dropped = JSON.parse(raw);
 
-      // Remove existing zone of same type
       if (['drawZone', 'discardZone', 'placementZone'].includes(dropped.type)) {
         const existing = elements.find((el) => el.type === dropped.type);
         if (existing) {
@@ -123,11 +117,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const renderGridLines = () => {
     if (!showGrid) return null;
     const lines = [];
-    for (let i = GRID_SIZE; i < BASE_WIDTH; i += GRID_SIZE) {
-      lines.push(<Rect key={`v-${i}`} x={i} y={0} width={1} height={BASE_HEIGHT} fill="#eee" />);
+    for (let i = GRID_SIZE; i < containerSize.width; i += GRID_SIZE) {
+      lines.push(<Rect key={`v-${i}`} x={i} y={0} width={1} height={containerSize.height} fill="#eee" />);
     }
-    for (let j = GRID_SIZE; j < BASE_HEIGHT; j += GRID_SIZE) {
-      lines.push(<Rect key={`h-${j}`} x={0} y={j} width={BASE_WIDTH} height={1} fill="#eee" />);
+    for (let j = GRID_SIZE; j < containerSize.height; j += GRID_SIZE) {
+      lines.push(<Rect key={`h-${j}`} x={0} y={j} width={containerSize.width} height={1} fill="#eee" />);
     }
     return lines;
   };
@@ -142,18 +136,16 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     >
       <Stage
         ref={stageRef}
-        width={BASE_WIDTH}
-        height={BASE_HEIGHT}
-        scaleX={scale}
-        scaleY={scale}
+        width={containerSize.width}
+        height={containerSize.height}
         style={{ transformOrigin: 'top left' }}
       >
         <Layer ref={layerRef}>
           <Rect
             x={0}
             y={0}
-            width={BASE_WIDTH}
-            height={BASE_HEIGHT}
+            width={containerSize.width}
+            height={containerSize.height}
             fill="#fafafa"
             stroke="#aaa"
             strokeWidth={2}
@@ -164,8 +156,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           <Rect
             x={0}
             y={0}
-            width={BASE_WIDTH}
-            height={BASE_HEIGHT}
+            width={containerSize.width}
+            height={containerSize.height}
             fill="transparent"
             onClick={() => onSelect(null)}
             onTap={() => onSelect(null)}
@@ -194,8 +186,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                   onTap={() => onSelect(el.id)}
                   onDragEnd={(e) => {
                     const node = e.target;
-                    const newX = Math.max(0, Math.min(node.x(), BASE_WIDTH - width));
-                    const newY = Math.max(0, Math.min(node.y(), BASE_HEIGHT - height));
+                    const newX = Math.max(0, Math.min(node.x(), containerSize.width - width));
+                    const newY = Math.max(0, Math.min(node.y(), containerSize.height - height));
                     node.position({ x: newX, y: newY });
                     onElementMove(el.id, newX, newY);
                   }}
@@ -234,8 +226,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                 onClick={() => onSelect(el.id)}
                 onTap={() => onSelect(el.id)}
                 onDragEnd={(e) => {
-                  const newX = Math.max(0, Math.min(e.target.x(), BASE_WIDTH - 100));
-                  const newY = Math.max(0, Math.min(e.target.y(), BASE_HEIGHT - 60));
+                  const newX = Math.max(0, Math.min(e.target.x(), containerSize.width - 100));
+                  const newY = Math.max(0, Math.min(e.target.y(), containerSize.height - 60));
                   e.target.position({ x: newX, y: newY });
                   onElementMove(el.id, newX, newY);
                 }}

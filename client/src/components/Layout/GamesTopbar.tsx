@@ -20,8 +20,8 @@ const GamesTopbar: React.FC = () => {
   }, []);
 
   const handleGuestLogin = () => {
-    login('guest_token', 'user', 'Guest');
-    navigate('/editor');
+    login('guest', { username: 'Guest' });
+    navigate('/games');
   };
 
   return (
@@ -52,7 +52,7 @@ const GamesTopbar: React.FC = () => {
               className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 border border-transparent rounded-md hover:border-gray-300 transition"
             >
               <User size={18} />
-              <span className="hidden sm:inline">{user}</span>
+              <span className="hidden sm:inline">{user?.username}</span>
             </button>
 
             {menuOpen && (

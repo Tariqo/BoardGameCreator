@@ -1,9 +1,9 @@
 import download from 'downloadjs';
 import { RuleSet } from '../../components/GameEditor/RuleSetEditor';
 import { FlowStep } from '../../components/GameEditor/FlowEditor';
-import { Card } from '../../components/GameEditor/DeckBuilder';
-import { BoardElement } from '../types/BoardElement';
-export type { BoardElement } from '../types/BoardElement';
+import  { Card } from '../../types/Card';
+import { BoardElement } from '../../types/BoardElement';
+export type { BoardElement } from '../../types/BoardElement';
 
 interface PublishParams {
   ruleSet: RuleSet;

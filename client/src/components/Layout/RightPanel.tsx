@@ -1,10 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import EffectsEditor from '../GameEditor/EffectsEditor';
-import ConditionsEditor, { Condition } from '../GameEditor/ConditionsEditor';
-import { Effect } from '../types/Effect';
-import { Card } from '../GameEditor/DeckBuilder';
-import { BoardElement as CanvasElement } from '../types/BoardElement';
-
+import ConditionsEditor from '../GameEditor/ConditionsEditor';
+import { Card } from '../../types/Card';
+import { BoardElement as CanvasElement } from '../../types/BoardElement';
 
 interface RightPanelProps {
   selectedElement: CanvasElement | null;
@@ -31,7 +29,6 @@ const RightPanel: React.FC<RightPanelProps> = ({
 
   const target = selectedCard ?? selectedElement;
   const isCanvasElement = target && 'type' in target && 'x' in target;
-
   const [localTarget, setLocalTarget] = useState<any>(target);
 
   useEffect(() => {
@@ -141,19 +138,20 @@ const RightPanel: React.FC<RightPanelProps> = ({
               </>
             )}
 
-          {(isCanvasElement && localTarget.type !== 'text') || selectedCard ? (
-            <EffectsEditor
-              effects={localTarget.effects || []}
-              onChange={(updated) => updateLocal({ effects: updated })}
-            />
-          ) : null}
+            {(isCanvasElement && localTarget.type !== 'text') || selectedCard ? (
+              <EffectsEditor
+                effects={localTarget.effects || []}
+                onChange={(updated) => updateLocal({ effects: updated })}
+              />
+            ) : null}
 
             {(isCanvasElement && localTarget.type === 'card') || selectedCard ? (
               <>
                 <ConditionsEditor
-                  title="Play Conditions"
-                  conditions={localTarget.playConditions || []}
-                  onChange={(updated) => updateLocal({ playConditions: updated })}
+                  cardConditions={localTarget.playConditions || []}
+                  onCardConditionsChange={(updated) =>
+                    updateLocal({ playConditions: updated })
+                  }
                 />
 
                 <div>

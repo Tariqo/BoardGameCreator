@@ -49,7 +49,7 @@ const ProfileSidebar: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gray-400" />
             <div>
-              <p className="font-medium">Welcome back, {user}</p>
+              <p className="font-medium">Welcome back, {user?.username}</p>
               <p className="text-sm text-gray-300">Community profile</p>
             </div>
           </div>

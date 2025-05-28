@@ -74,7 +74,7 @@ const EditorTopbar: React.FC<EditorTopbarProps> = ({
             className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-white border border-transparent rounded-md hover:border-gray-300 transition"
           >
             <User size={18} />
-            <span className="hidden sm:inline">{user}</span>
+            <span className="hidden sm:inline">{user?.username}</span>
           </button>
 
           {open && (

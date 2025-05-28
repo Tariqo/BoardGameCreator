@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import EffectsEditor from './EffectsEditor';
 import ConditionsEditor, { Condition } from './ConditionsEditor';
-import { Effect } from '../types/Effect';
 
 export type RuleSet = {
   id: string;
@@ -14,8 +12,8 @@ export type RuleSet = {
   eliminationConditions: Condition[];
   actions: string[];
   tags: string[];
-  turnEffects: Effect[];
-  initialHand: string[]; // You may remove this in the future
+  turnEffects: any[];
+  initialHand: string[];
   initialHandCount?: number;
 };
 
@@ -75,19 +73,22 @@ const RuleSetEditor: React.FC<RuleSetEditorProps> = ({
         />
       </div>
 
-      <ConditionsEditor
-        title="Win Conditions"
-        conditions={winConditions}
-        onChange={setWinConditions}
-      />
+      <div>
+        <h4 className="text-sm font-semibold text-gray-700 mb-1">Win Conditions</h4>
+        <ConditionsEditor
+          winConditions={winConditions}
+          onWinConditionsChange={setWinConditions}
+        />
+      </div>
 
-      <ConditionsEditor
-        title="Elimination Conditions"
-        conditions={eliminationConditions}
-        onChange={setEliminationConditions}
-      />
+      <div>
+        <h4 className="text-sm font-semibold text-gray-700 mb-1">Elimination Conditions</h4>
+        <ConditionsEditor
+          winConditions={eliminationConditions}
+          onWinConditionsChange={setEliminationConditions}
+        />
+      </div>
 
-      {/* Toggle Teams */}
       <div>
         <button
           onClick={() => setUseTeams(!useTeams)}

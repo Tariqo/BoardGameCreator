@@ -44,7 +44,7 @@ const ProfilePage: React.FC = () => {
       }
     >
       <div className="space-y-1 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Welcome back, {user}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">Welcome back, {user?.username}</h1>
         <p className="text-gray-500 text-sm">Community profile</p>
       </div>
 

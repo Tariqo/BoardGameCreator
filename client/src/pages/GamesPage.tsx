@@ -1,17 +1,51 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import GamesTopbar from '../components/Layout/GamesTopbar';
 import GamesSidebar from '../components/Layout/GamesSidebar';
 import { useNavigate } from 'react-router-dom';
 
+interface Game {
+  _id: string;
+  name: string;
+  createdAt: string;
+}
+
 const GamesPage: React.FC = () => {
   const navigate = useNavigate();
+  const [games, setGames] = useState<Game[]>([]);
 
-  const mockGames = Array.from({ length: 9 }, (_, i) => ({
-    id: i,
-    title: `Community Game ${i + 1}`,
-    description: 'A fun and creative board game made by users.',
-    createdAt: `${i + 1}h ago`,
-  }));
+  useEffect(() => {
+    fetch('http://localhost:5000/api/published/my', {
+      credentials: 'include',
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setGames(data.data);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch user games:', err);
+      });
+  }, []);
+
+  const handleStartGame = async (gameId: string) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/game/session/start/${gameId}`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.sessionId) {
+        navigate(`/play/session/${data.sessionId}`);
+      } else {
+        console.error('Failed to start session:', data.error || 'Unknown error');
+      }
+    } catch (err) {
+      console.error('Error starting game session:', err);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -21,30 +55,33 @@ const GamesPage: React.FC = () => {
         <GamesSidebar />
 
         <main className="flex-1 p-6 overflow-y-auto">
-          <h1 className="text-2xl font-semibold text-gray-800 mb-4">Popular Community Games</h1>
+          <h1 className="text-2xl font-semibold text-gray-800 mb-4">My Games</h1>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockGames.map((game) => (
+            {games.map((game) => (
               <div
-                key={game.id}
+                key={game._id}
                 className="bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition cursor-pointer"
-                onClick={() => navigate(`/game/${game.id}`)}
+                onClick={() => handleStartGame(game._id)}
               >
                 <div className="h-36 bg-gray-200 rounded-t-md flex items-center justify-center text-gray-400 text-sm">
                   Thumbnail
                 </div>
                 <div className="p-4 space-y-1">
-                  <h2 className="text-lg font-medium text-gray-900">{game.title}</h2>
-                  <p className="text-gray-500 text-sm">{game.description}</p>
-                  <p className="text-gray-400 text-xs">{game.createdAt}</p>
+                  <h2 className="text-lg font-medium text-gray-900">{game.name}</h2>
+                  <p className="text-gray-400 text-xs">
+                    {new Date(game.createdAt).toLocaleDateString()}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="mt-10 text-center text-gray-400 text-sm">
-            Scroll down to discover more games...
-          </div>
+          {games.length === 0 && (
+            <div className="mt-10 text-center text-gray-400 text-sm">
+              No games found. Try publishing one from the editor!
+            </div>
+          )}
         </main>
       </div>
     </div>

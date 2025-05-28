@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Effect, EffectType } from '../types/Effect';
+import { Effect, EffectType } from '../../types/Effect';
 import { v4 as uuid } from 'uuid';
 
 interface EffectsEditorProps {

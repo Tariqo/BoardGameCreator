@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import GameCanvas from '../components/GameEditor/GameCanvas';
 import RightPanel from '../components/Layout/RightPanel';
 import EditorTopbar from '../components/Layout/EditorTopbar';
@@ -7,11 +7,11 @@ import { v4 as uuid } from 'uuid';
 import { useUndoRedo } from '../hooks/useUndoRedo';
 import { useLayout } from '../store/layoutStore';
 import { RuleSet } from '../components/GameEditor/RuleSetEditor';
-import DeckBuilder, { Card } from '../components/GameEditor/DeckBuilder';
+import DeckBuilder from '../components/GameEditor/DeckBuilder';
+import { Card } from '../types/Card';
 import FlowEditor, { FlowStep } from '../components/GameEditor/FlowEditor';
 import download from 'downloadjs';
-import { publishGame } from '../components/ProjectManager/PublishGame';
-import { BoardElement } from '../components/types/BoardElement';
+import { BoardElement } from '../types/BoardElement';
 
 type ZoneMode = 'draw' | 'discard' | null;
 
@@ -25,6 +25,8 @@ const EditorPage = () => {
   const [lastSavedRuleSet, setLastSavedRuleSet] = useState<RuleSet | null>(null);
   const [showDeckBuilder, setShowDeckBuilder] = useState(false);
   const [showFlowEditor, setShowFlowEditor] = useState(false);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const canvasWrapperRef = useRef<HTMLDivElement>(null);
 
   const { players: initialPlayers } = useLayout();
   const [players] = useState(
@@ -32,6 +34,9 @@ const EditorPage = () => {
   );
   const [deck, setDeck] = useState<Card[]>([]);
   const [discardPile] = useState<Card[]>([]);
+  const [shuffleOnStart, setShuffleOnStart] = useState(
+    () => JSON.parse(localStorage.getItem('shuffleOnStart') || 'true')
+  );
 
   const [gameFlow, setGameFlow] = useState<FlowStep[]>([
     { id: uuid(), label: 'start turn', next: null, x: 50, y: 60 },
@@ -42,6 +47,21 @@ const EditorPage = () => {
   ]);
 
   const selectedElement = elements.find((el) => el.id === selectedId) || null;
+
+  useEffect(() => {
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const { width, height } = entry.contentRect;
+        setContainerSize({ width, height });
+      }
+    });
+
+    if (canvasWrapperRef.current) {
+      observer.observe(canvasWrapperRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   const addElement = (type: 'card' | 'text' | 'token') => {
     const newElement: BoardElement = {
@@ -57,7 +77,7 @@ const EditorPage = () => {
   const handleElementMove = (id: string, x: number, y: number) => {
     setElements(elements.map((el) => (el.id === id ? { ...el, x, y } : el)));
   };
-  
+
   const handleElementDrop = (
     dropped: Omit<BoardElement, 'id'>,
     position: { x: number; y: number }
@@ -68,9 +88,7 @@ const EditorPage = () => {
       dropped.type === 'placementZone';
 
     if (isZone) {
-      // Remove any existing element of the same type
       const filtered = elements.filter((el) => el.type !== dropped.type);
-
       const newElement: BoardElement = {
         id: uuid(),
         name: dropped.name,
@@ -80,12 +98,10 @@ const EditorPage = () => {
         width: 160,
         height: 80,
       };
-
       setElements([...filtered, newElement]);
       return;
     }
 
-    // Otherwise add normally
     const newElement: BoardElement = {
       id: uuid(),
       name: dropped.name,
@@ -100,7 +116,6 @@ const EditorPage = () => {
     setElements([...elements, newElement]);
   };
 
-
   const updateElement = (id: string, updated: Partial<BoardElement>) => {
     setElements(elements.map((el) => (el.id === id ? { ...el, ...updated } : el)));
   };
@@ -114,11 +129,12 @@ const EditorPage = () => {
     const gameData = {
       ruleSet: lastSavedRuleSet,
       players,
-      initialCardsPerPlayer: players.map(p => p.hand.length),
+      initialCardsPerPlayer: players.map((p) => p.hand.length),
       deck,
       discardPile,
       gameFlow,
       canvas: elements,
+      shuffleOnStart,
     };
 
     try {
@@ -140,8 +156,8 @@ const EditorPage = () => {
     }
   };
 
-  const handlePublish = () => {
-    publishGame({
+  const handlePublish = async () => {
+    const data = {
       ruleSet: lastSavedRuleSet ?? {
         id: crypto.randomUUID(),
         name: 'Untitled Rule Set',
@@ -157,15 +173,34 @@ const EditorPage = () => {
         initialHand: [],
         initialHandCount: 0,
       },
-      elements,
+      canvas: elements,
       gameFlow,
       deck,
       discardPile,
       players,
       maxPlayers: players.length,
       initialHandCount: players.map((p) => p.hand.length),
-      fileName: 'boardgame-published.json',
-    });
+      shuffleOnStart, // ✅ included in publish
+    };
+
+    try {
+      const res = await fetch('http://localhost:5000/api/published/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+      if (res.ok && result.success) {
+        alert('Game published to library!');
+      } else {
+        throw new Error(result.message || 'Failed to publish');
+      }
+    } catch (err) {
+      console.error('Error publishing game:', err);
+      alert('Failed to publish game.');
+    }
   };
 
   const handleRuleSetSave = (ruleSet: RuleSet) => {
@@ -208,23 +243,22 @@ const EditorPage = () => {
       />
 
       <div className="flex flex-1 overflow-hidden">
-      <EditorSidebar
-        onAdd={addElement}
-        onUploadSprite={(src) => {
-          if (elements.length === 0) return;
-          const last = elements[elements.length - 1];
-          updateElement(last.id, { imageUrl: src });
-        }}
-        onSaveGame={handleRuleSetSave}
-      />
-
+        <EditorSidebar
+          onAdd={addElement}
+          onUploadSprite={(src) => {
+            if (elements.length === 0) return;
+            const last = elements[elements.length - 1];
+            updateElement(last.id, { imageUrl: src });
+          }}
+          onSaveGame={handleRuleSetSave}
+        />
 
         <main className="flex-1 flex flex-col overflow-auto bg-gray-50">
           <div className="p-6 flex flex-col min-h-full">
             <h1 className="text-2xl font-bold mb-4">Game Editor</h1>
 
-            <div className="relative w-full flex-1 border border-gray-300 bg-white rounded-md shadow-md overflow-auto">
-              <div style={{ width: 1600, height: 800 }}>
+            <div className="relative flex-1 min-h-0" ref={canvasWrapperRef}>
+              {containerSize.width > 0 && containerSize.height > 0 && (
                 <GameCanvas
                   elements={elements}
                   selectedId={selectedId}
@@ -240,7 +274,7 @@ const EditorPage = () => {
                   setZoneMode={setZoneMode}
                   showGrid={showGrid}
                 />
-              </div>
+              )}
             </div>
 
             <div className="mt-4">
@@ -262,6 +296,8 @@ const EditorPage = () => {
                   setSelectedCard(card);
                   setSelectedId(null);
                 }}
+                shuffleOnStart={shuffleOnStart}
+                setShuffleOnStart={setShuffleOnStart}
               />
             </div>
           )}

@@ -6,7 +6,7 @@ const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const form = e.currentTarget;
@@ -18,15 +18,39 @@ const LoginPage: React.FC = () => {
       return;
     }
 
-    const name = email.split('@')[0];
-    const role = email.includes('admin') ? 'admin' : 'user';
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // ✅ includes HttpOnly cookie
+        body: JSON.stringify({
+          loginIdentifier: email,
+          password,
+        }),
+      });
 
-    login('fake_token', role, name);
-    navigate('/games');
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(data.message || 'Login failed');
+        return;
+      }
+
+      // ✅ Set user in context
+      login('user', {
+      username: data.data.user.username,
+      email: data.data.user.email,
+    });
+
+      navigate('/games');
+    } catch (err) {
+      console.error('Login error:', err);
+      alert('Something went wrong');
+    }
   };
 
   const handleGuestLogin = () => {
-    login('guest_token', 'user', 'Guest');
+    login('guest', { username: 'Guest' });
     navigate('/games');
   };
 
@@ -41,7 +65,7 @@ const LoginPage: React.FC = () => {
         <input
           name="email"
           type="email"
-          placeholder="Email"
+          placeholder="Email or username"
           className="w-full border p-2 rounded"
           required
         />

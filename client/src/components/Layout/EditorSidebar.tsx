@@ -24,13 +24,11 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
   const startWidth = useRef(width);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [showUploads, setShowUploads] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [gameplayMode, setGameplayMode] = useState<'dice' | 'cards'>('cards');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [useTeams, setUseTeams] = useState(false);
-  const [maxPlayers, setMaxPlayers] = useState(4);
+  const [maxPlayers] = useState(4);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsResizing(true);
@@ -75,21 +73,9 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
           url: reader.result,
         };
         onUploadSprite(image.url);
-        setUploadedImages((prev) => [...prev, image]);
       }
     };
     reader.readAsDataURL(file);
-  };
-
-  const handleImageDragStart = (e: React.DragEvent, image: UploadedImage) => {
-    e.dataTransfer.setData(
-      'application/json',
-      JSON.stringify({
-        name: image.name,
-        type: 'token',
-        imageUrl: image.url,
-      })
-    );
   };
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -113,13 +99,17 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
         <div className="flex gap-2">
           <button
             onClick={() => setGameplayMode('cards')}
-            className={`flex-1 px-2 py-1 rounded text-sm ${gameplayMode === 'cards' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            className={`flex-1 px-2 py-1 rounded text-sm ${
+              gameplayMode === 'cards' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+            }`}
           >
             Tile/Card
           </button>
           <button
             onClick={() => setGameplayMode('dice')}
-            className={`flex-1 px-2 py-1 rounded text-sm ${gameplayMode === 'dice' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            className={`flex-1 px-2 py-1 rounded text-sm ${
+              gameplayMode === 'dice' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+            }`}
           >
             Dice Rolls
           </button>
@@ -171,7 +161,10 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
           <button
             draggable
             onDragStart={(e) =>
-              e.dataTransfer.setData('application/json', JSON.stringify({ name: 'Draw Pile Zone', type: 'drawZone' }))
+              e.dataTransfer.setData(
+                'application/json',
+                JSON.stringify({ name: 'Draw Pile Zone', type: 'drawZone' })
+              )
             }
             className="cursor-move px-3 py-2 border rounded bg-green-100 hover:bg-green-200 text-sm shadow-sm"
           >
@@ -180,7 +173,10 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
           <button
             draggable
             onDragStart={(e) =>
-              e.dataTransfer.setData('application/json', JSON.stringify({ name: 'Discard Pile Zone', type: 'discardZone' }))
+              e.dataTransfer.setData(
+                'application/json',
+                JSON.stringify({ name: 'Discard Pile Zone', type: 'discardZone' })
+              )
             }
             className="cursor-move px-3 py-2 border rounded bg-yellow-100 hover:bg-yellow-200 text-sm shadow-sm"
           >
@@ -189,7 +185,10 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
           <button
             draggable
             onDragStart={(e) =>
-              e.dataTransfer.setData('application/json', JSON.stringify({ name: 'Card Play Area', type: 'placementZone' }))
+              e.dataTransfer.setData(
+                'application/json',
+                JSON.stringify({ name: 'Card Play Area', type: 'placementZone' })
+              )
             }
             className="cursor-move px-3 py-2 border rounded bg-purple-100 hover:bg-purple-200 text-sm shadow-sm"
           >
@@ -202,9 +201,9 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
       <RuleSetEditor
         gameplayMode={gameplayMode}
         maxPlayers={maxPlayers}
-        onSave={onSaveGame}
         useTeams={useTeams}
         tags={tags}
+        onSave={onSaveGame}
       />
 
       {/* Upload Button */}

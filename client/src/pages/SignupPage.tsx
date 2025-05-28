@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
+
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email || !password || !confirm) {
+    setError('');
+    if (!email || !username || !password || !confirm) {
       setError('All fields are required');
       return;
     }
@@ -21,9 +26,32 @@ const SignupPage: React.FC = () => {
       return;
     }
 
-    // Placeholder: Simulate signup
-    alert('Account created (simulated)');
-    navigate('/login');
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, username, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.message || 'Signup failed');
+        return;
+      }
+
+      // ✅ Optionally auto-login right after registration
+      login('user', {
+        username: data.data.username,
+        email: data.data.email,
+      });
+
+      navigate('/games');
+    } catch (err) {
+      console.error('Signup error:', err);
+      setError('Something went wrong');
+    }
   };
 
   return (
@@ -38,6 +66,17 @@ const SignupPage: React.FC = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="w-full border px-3 py-2 rounded mt-1"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Username</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full border px-3 py-2 rounded mt-1"
               required
             />

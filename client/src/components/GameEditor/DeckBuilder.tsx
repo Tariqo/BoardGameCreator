@@ -1,29 +1,58 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { v4 as uuid } from 'uuid';
-import ConditionsEditor, { Condition } from './ConditionsEditor';
-
-export type Card = {
-  id: string;
-  name: string;
-  imageUrl?: string;
-  tags?: string[];
-  playConditions?: Condition[];
-  effects?: any[];
-};
+import { Card } from '../../types/Card';
 
 interface DeckBuilderProps {
   deck: Card[];
   setDeck: (newDeck: Card[]) => void;
   onSelectCard: (card: Card | null) => void;
+  shuffleOnStart: boolean;
+  setShuffleOnStart: (value: boolean) => void;
 }
 
-const DeckBuilder: React.FC<DeckBuilderProps> = ({ deck, setDeck, onSelectCard }) => {
-  const [newCardName, setNewCardName] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const [shuffleOnStart, setShuffleOnStart] = useState(
-    () => JSON.parse(localStorage.getItem('shuffleOnStart') || 'true')
-  );
+const DeckBuilder: React.FC<DeckBuilderProps> = ({
+  deck,
+  setDeck,
+  onSelectCard,
+  shuffleOnStart,
+  setShuffleOnStart,
+}) => {
+  const [newCardName, setNewCardName] = React.useState('');
+  const [imageUrl, setImageUrl] = React.useState('');
+  const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
+
+  const uploadSprite = async (file: File): Promise<{ url: string; publicId: string }> => {
+    const formData = new FormData();
+    formData.append('sprite', file);
+
+    const response = await fetch('http://localhost:5000/api/assets/upload', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+    });
+
+    const result = await response.json();
+
+    if (!result.success || !result.url) {
+      throw new Error(result.message || 'Upload failed');
+    }
+
+    return { url: result.url, publicId: result.public_id };
+  };
+
+  const deleteSprite = async (publicId: string) => {
+    try {
+      await fetch('http://localhost:5000/api/assets/delete', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ publicId }),
+      });
+    } catch (error) {
+      console.error('Failed to delete from Cloudinary:', error);
+    }
+  };
 
   const addCardToDeck = () => {
     if (!newCardName) return;
@@ -37,24 +66,32 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ deck, setDeck, onSelectCard }
     setImageUrl('');
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
-    const uploadedCards: Card[] = [];
-
-    Array.from(files).forEach((file) => {
+    const uploadPromises = Array.from(files).map(async (file) => {
       const name = file.name.replace(/\.[^/.]+$/, '');
-      const url = URL.createObjectURL(file);
-
-      uploadedCards.push({
-        id: uuid(),
-        name,
-        imageUrl: url,
-      });
+      try {
+        const { url, publicId } = await uploadSprite(file);
+        return {
+          id: uuid(),
+          name,
+          imageUrl: url,
+          publicId,
+        } as Card;
+      } catch (err) {
+        console.error(`Upload failed for ${name}:`, err);
+        return null;
+      }
     });
 
-    setDeck([...deck, ...uploadedCards]);
+    const results = await Promise.all(uploadPromises);
+    const uploadedCards = results.filter((card): card is Card => card !== null);
+
+    if (uploadedCards.length > 0) {
+      setDeck([...deck, ...uploadedCards]);
+    }
   };
 
   const toggleShuffle = () => {
@@ -69,7 +106,14 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ deck, setDeck, onSelectCard }
     onSelectCard(isSelected ? null : card);
   };
 
-  const handleCardRemove = (cardId: string) => {
+  const handleCardRemove = async (cardId: string) => {
+    const card = deck.find(c => c.id === cardId);
+    if (!card) return;
+
+    if (card.publicId) {
+      await deleteSprite(card.publicId);
+    }
+
     setDeck(deck.filter(c => c.id !== cardId));
     if (selectedCardId === cardId) {
       setSelectedCardId(null);
@@ -136,10 +180,9 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ deck, setDeck, onSelectCard }
             }`}
             onClick={() => handleCardSelect(card)}
           >
-            {/* Remove Button */}
             <button
               onClick={(e) => {
-                e.stopPropagation(); // Prevent triggering selection
+                e.stopPropagation();
                 handleCardRemove(card.id);
               }}
               className="absolute top-1 right-1 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center hover:bg-red-600"
@@ -155,6 +198,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ deck, setDeck, onSelectCard }
                   alt={card.name}
                   className="w-full h-full object-contain"
                 />
+                <small className="text-[10px] break-all text-gray-400">{card.imageUrl}</small>
               </div>
             ) : (
               <div className="w-24 h-24 mx-auto flex items-center justify-center bg-gray-200 text-sm rounded">
