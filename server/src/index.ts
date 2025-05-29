@@ -13,7 +13,7 @@ import projectRoutes from './routes/projectRoutes';
 import assetRoutes from './routes/assetRoutes';
 import gameLogicRoutes from './routes/gameLogicRoutes';
 import { errorHandler } from './middleware/errorHandler';
-import gameRoutes from './routes/gameRoutes';
+// import gameRoutes from './routes/gameRoutes';
 import publishedGameRoutes from './routes/publishedGameRoutes';
 import gameSessionRoutes from './routes/gameSessionRoutes';
 
@@ -48,7 +48,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/assets', assetRoutes);
 app.use('/api/game', gameLogicRoutes);
-app.use('/api/game', gameRoutes);
+// app.use('/api/game', gameRoutes);
 app.use('/api/published', publishedGameRoutes);
 
 app.use('/api/game', gameSessionRoutes);

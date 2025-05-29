@@ -145,7 +145,7 @@ const EditorPage = () => {
       });
 
       const result = await response.json();
-      console.log('Game saved:', result);
+      // console.log('Game saved:', result);
       alert('Game saved successfully!');
 
       const fileName = `${lastSavedRuleSet.name || 'boardgame'}-config.json`;

@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 
+
 const GameSessionSchema = new mongoose.Schema({
+  lastPlayedTags: { type: [String], default: [] },
   gameId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Game',
@@ -11,6 +13,7 @@ const GameSessionSchema = new mongoose.Schema({
       {
         name: String,
         hand: Array,
+        eliminated: { type: Boolean, default: false },
       },
     ],
     required: true,

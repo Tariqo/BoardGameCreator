@@ -5,7 +5,6 @@ import { useParams } from 'react-router-dom';
 import GamePlayCanvas from '../components/GameplayUI/GamePlayCanvas';
 import PlayTopbar from '../components/Layout/PlayTopbar';
 
-
 const PlayPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [deck, setDeck] = useState<Card[]>([]);
@@ -16,15 +15,17 @@ const PlayPage: React.FC = () => {
   const [draggedCard, setDraggedCard] = useState<Card | null>(null);
   const playerIndex = 0;
 
-  // Load existing session
   useEffect(() => {
     if (!sessionId) return;
+
+    console.log('Fetching game state for sessionId:', sessionId);
 
     fetch(`http://localhost:5000/api/game/session/${sessionId}/state`, {
       credentials: 'include',
     })
       .then((res) => res.json())
       .then((game) => {
+        console.log('Game state received:', game);
         syncWithBackend(game);
       })
       .catch((err) => {
@@ -33,6 +34,7 @@ const PlayPage: React.FC = () => {
   }, [sessionId]);
 
   const syncWithBackend = (game: any) => {
+    console.log('Syncing with backend game data:', game);
     setDeck(game.deck);
     setDiscardPile(game.discardPile);
     setCanvasZones(game.canvas || game.elements);
@@ -42,43 +44,55 @@ const PlayPage: React.FC = () => {
 
   const postAction = async (type: string, extra: Record<string, any> = {}) => {
     if (!sessionId) return;
+
+    const payload = {
+      type,
+      playerIndex,
+      ...extra,
+    };
+
+    console.log('Posting action to backend:', payload);
+
     try {
       const res = await fetch(`http://localhost:5000/api/game/session/${sessionId}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          type,
-          playerIndex,
-          ...extra,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error('Action failed');
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`Server responded with status ${res.status}:`, errorText);
+        throw new Error('Action failed');
+      }
+
       const updated = await res.json();
+      console.log('Received updated game state:', updated);
       syncWithBackend(updated);
     } catch (err) {
-      console.error(`Error performing ${type}:`, err);
+      console.error(`Error performing action "${type}"`, err);
     }
   };
 
   const handlePlayCard = (card: Card, pos: { x: number; y: number }) => {
+    console.log('Attempting to play card:', card, 'at position:', pos);
     postAction('play_card', { cardId: card.id, position: pos });
   };
 
   const handleDrawCard = () => {
+    console.log('Draw card clicked');
     postAction('draw_card');
   };
 
   const handleEndTurn = () => {
+    console.log('End turn clicked');
     postAction('end_turn');
   };
 
   return (
-    
     <div className="relative w-full h-screen bg-green-800 text-white overflow-hidden flex flex-col">
       <PlayTopbar />
-      {/* Canvas Area */}
       <div className="flex-1 relative">
         <GamePlayCanvas
           canvasZones={canvasZones}
@@ -89,7 +103,6 @@ const PlayPage: React.FC = () => {
         />
       </div>
 
-      {/* Player Hand */}
       <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-3 px-6">
         {hand.map((card) => (
           <img
@@ -98,8 +111,14 @@ const PlayPage: React.FC = () => {
             alt={card.name}
             className="h-32 shadow-md rounded border-2 border-white hover:scale-105 transition-transform"
             draggable
-            onDragStart={() => setDraggedCard(card)}
-            onDragEnd={() => setDraggedCard(null)}
+            onDragStart={() => {
+              console.log('Dragging card:', card);
+              setDraggedCard(card);
+            }}
+            onDragEnd={() => {
+              console.log('Stopped dragging card');
+              setDraggedCard(null);
+            }}
           />
         ))}
 

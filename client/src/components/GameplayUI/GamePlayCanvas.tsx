@@ -81,9 +81,9 @@ const GamePlayCanvas: React.FC<GamePlayCanvasProps> = ({
       }
     }
   };
-    console.log('Canvas Zones:', canvasZones);
-    console.log('Played Cards:', playedCards);
-    console.log('Discard Pile:', discardPile);
+    // console.log('Canvas Zones:', canvasZones);
+    // console.log('Played Cards:', playedCards);
+    // console.log('Discard Pile:', discardPile);
   return (
     
     <div
