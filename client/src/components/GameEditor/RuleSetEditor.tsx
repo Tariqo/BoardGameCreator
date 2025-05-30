@@ -4,6 +4,7 @@ import ConditionsEditor, { Condition } from './ConditionsEditor';
 export type RuleSet = {
   id: string;
   name: string;
+  description?: string;
   gameplayMode: 'cards' | 'dice';
   maxPlayers: number;
   teamCount: number;
@@ -33,6 +34,7 @@ const RuleSetEditor: React.FC<RuleSetEditorProps> = ({
   onSave,
 }) => {
   const [ruleSetName, setRuleSetName] = useState('');
+  const [description, setDescription] = useState('');
   const [winConditions, setWinConditions] = useState<Condition[]>([]);
   const [eliminationConditions, setEliminationConditions] = useState<Condition[]>([]);
   const [teamCount, setTeamCount] = useState(2);
@@ -44,6 +46,7 @@ const RuleSetEditor: React.FC<RuleSetEditorProps> = ({
     const ruleSet: RuleSet = {
       id: crypto.randomUUID(),
       name: ruleSetName,
+      description,
       gameplayMode,
       maxPlayers,
       teamCount: useTeams ? teamCount : 0,
@@ -70,6 +73,16 @@ const RuleSetEditor: React.FC<RuleSetEditorProps> = ({
           value={ruleSetName}
           onChange={(e) => setRuleSetName(e.target.value)}
           className="w-full border px-2 py-1 text-sm rounded"
+        />
+      </div>
+
+      <div>
+        <label className="text-xs text-gray-600 block mb-1">Description</label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full border px-2 py-1 text-sm rounded"
+          rows={3}
         />
       </div>
 

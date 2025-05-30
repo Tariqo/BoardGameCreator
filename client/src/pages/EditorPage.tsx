@@ -158,7 +158,14 @@ const EditorPage = () => {
   };
 
   const handlePublish = async () => {
+    if (!lastSavedRuleSet?.name) {
+      alert('Please save a rule set with a name before publishing.');
+      return;
+    }
+
     const data = {
+      name: lastSavedRuleSet.name,
+      description: lastSavedRuleSet.description || '',
       ruleSet: lastSavedRuleSet ?? {
         id: crypto.randomUUID(),
         name: 'Untitled Rule Set',
@@ -181,7 +188,7 @@ const EditorPage = () => {
       players,
       maxPlayers: players.length,
       initialHandCount: players.map((p) => p.hand.length),
-      shuffleOnStart, // ✅ included in publish
+      shuffleOnStart,
     };
 
     try {

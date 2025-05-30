@@ -11,7 +11,7 @@ interface AuthContextType {
   role: 'admin' | 'user' | 'guest' | null;
   isLoading: boolean;
   login: (role: 'admin' | 'user' | 'guest', userData: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,19 +21,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<'admin' | 'user' | 'guest' | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ Always attempt to restore session on page load
   useEffect(() => {
     const fetchMe = async () => {
       try {
         const res = await fetch(`${config.apiUrl}/api/users/me`, {
+          ...config.defaultFetchOptions,
           method: 'GET',
-          credentials: 'include',
         });
 
         const data = await res.json();
         if (res.ok && data.success) {
           setUser(data.data.user);
-          setRole('user'); // Customize if backend supports roles
+          setRole('user');
         } else {
           setUser(null);
           setRole(null);
@@ -58,26 +57,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       await fetch(`${config.apiUrl}/api/auth/logout`, {
+        ...config.defaultFetchOptions,
         method: 'POST',
-        credentials: 'include',
       });
     } catch (err) {
       console.error('Logout failed:', err);
+    } finally {
+      setUser(null);
+      setRole(null);
     }
-
-    setUser(null);
-    setRole(null);
   };
 
-  return (
-    <AuthContext.Provider value={{ user, role, isLoading, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    user,
+    role,
+    isLoading,
+    login,
+    logout,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
-  return ctx;
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

@@ -9,6 +9,10 @@ interface Game {
   name: string;
   createdAt: string;
   tags?: string[];
+  description?: string;
+  createdBy?: {
+    username: string;
+  };
 }
 
 const GamesPage: React.FC = () => {
@@ -17,9 +21,12 @@ const GamesPage: React.FC = () => {
   const [filteredGames, setFilteredGames] = useState<Game[]>([]);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [search, setSearch] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${config.apiUrl}/api/published/my`, {
+    // Fetch all games
+    fetch(`${config.apiUrl}/api/games/search`, {
       credentials: 'include',
     })
       .then((res) => res.json())
@@ -27,10 +34,16 @@ const GamesPage: React.FC = () => {
         if (data.success) {
           setGames(data.data);
           setFilteredGames(data.data);
+        } else {
+          setError(data.message || 'Failed to fetch games');
         }
       })
       .catch((err) => {
-        console.error('Failed to fetch user games:', err);
+        console.error('Failed to fetch games:', err);
+        setError('Failed to load games. Please try again later.');
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
   }, []);
 
@@ -45,7 +58,8 @@ const GamesPage: React.FC = () => {
     const finalFiltered = byTag.filter(
       (game) =>
         game.name.toLowerCase().includes(lowerSearch) ||
-        (game.tags || []).some((tag) => tag.toLowerCase().includes(lowerSearch))
+        (game.tags || []).some((tag) => tag.toLowerCase().includes(lowerSearch)) ||
+        game.createdBy?.username.toLowerCase().includes(lowerSearch)
     );
 
     setFilteredGames(finalFiltered);
@@ -74,6 +88,22 @@ const GamesPage: React.FC = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-xl text-gray-600">Loading games...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-xl text-red-600">{error}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <GamesTopbar search={search} setSearch={setSearch} />
@@ -83,7 +113,7 @@ const GamesPage: React.FC = () => {
 
         <main className="flex-1 p-6 overflow-y-auto">
           <h1 className="text-2xl font-semibold text-gray-800 mb-4">
-            {activeTag ? `Games tagged with "${activeTag}"` : 'My Games'}
+            {activeTag ? `Games tagged with "${activeTag}"` : 'Available Games'}
           </h1>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -94,10 +124,26 @@ const GamesPage: React.FC = () => {
                 onClick={() => handleStartGame(game._id)}
               >
                 <div className="h-36 bg-gray-200 rounded-t-md flex items-center justify-center text-gray-400 text-sm">
-                  Thumbnail
+                  Game Preview
                 </div>
-                <div className="p-4 space-y-1">
+                <div className="p-4 space-y-2">
                   <h2 className="text-lg font-medium text-gray-900">{game.name}</h2>
+                  {game.description && (
+                    <p className="text-sm text-gray-600 line-clamp-2">{game.description}</p>
+                  )}
+                  {game.createdBy && (
+                    <p className="text-xs text-gray-500">Created by {game.createdBy.username}</p>
+                  )}
+                  <div className="flex flex-wrap gap-1">
+                    {game.tags?.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                   <p className="text-gray-400 text-xs">
                     {new Date(game.createdAt).toLocaleDateString()}
                   </p>
@@ -108,7 +154,11 @@ const GamesPage: React.FC = () => {
 
           {filteredGames.length === 0 && (
             <div className="mt-10 text-center text-gray-400 text-sm">
-              No games found. Try publishing one from the editor!
+              {activeTag
+                ? `No games found with tag "${activeTag}"`
+                : search
+                ? 'No games match your search'
+                : 'No games available. Be the first to publish one!'}
             </div>
           )}
         </main>

@@ -11,38 +11,64 @@ declare global {
   }
 }
 
-export const authenticateToken = (
+export const authenticateToken = async (
   req: Request,
   res: Response,
   next: NextFunction
-): void => {
-  const token = req.cookies?.token;
+): Promise<void> => {
+  try {
+    const token = req.cookies?.token;
 
-  if (!token) {
-    res.status(401).json({
-      success: false,
-      message: 'Authentication token is required',
-    });
-    return;
-  }
+    if (!token) {
+      res.status(401).json({
+        success: false,
+        message: 'Authentication token is required',
+      });
+      return;
+    }
 
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    throw new Error('JWT_SECRET is not defined in environment variables');
-  }
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET is not defined in environment variables');
+    }
 
-  jwt.verify(token, jwtSecret, (err: VerifyErrors | null, decoded: string | JwtPayload | undefined) => {
-    if (err || typeof decoded !== 'object' || !('userId' in decoded)) {
+    const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+    
+    if (!decoded || typeof decoded !== 'object' || !('userId' in decoded)) {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid token format',
+      });
+      return;
+    }
+
+    // Find user and attach to request
+    const user = await User.findById(decoded.userId).select('-password');
+    if (!user) {
+      res.status(401).json({
+        success: false,
+        message: 'User not found',
+      });
+      return;
+    }
+
+    req.userId = decoded.userId;
+    req.user = user;
+    next();
+  } catch (err) {
+    if (err instanceof jwt.JsonWebTokenError) {
       res.status(401).json({
         success: false,
         message: 'Invalid or expired token',
       });
       return;
     }
-
-    req.userId = (decoded as JwtPayload).userId;
-    next();
-  });
+    
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during authentication',
+    });
+  }
 };
 
 export const attachUser = async (
