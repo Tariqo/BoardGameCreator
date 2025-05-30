@@ -4,6 +4,7 @@ import { BoardElement } from '../types/BoardElement';
 import { useParams } from 'react-router-dom';
 import GamePlayCanvas from '../components/GameplayUI/GamePlayCanvas';
 import PlayTopbar from '../components/Layout/PlayTopbar';
+import GameLog from '../components/GameplayUI/GameLog';
 
 const PlayPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -15,17 +16,17 @@ const PlayPage: React.FC = () => {
   const [draggedCard, setDraggedCard] = useState<Card | null>(null);
   const playerIndex = 0;
 
+  const [logs, setLogs] = useState<string[]>([]);
+  const addLog = (entry: string) => setLogs((prev) => [...prev.slice(-50), entry]);
+
   useEffect(() => {
     if (!sessionId) return;
-
-    console.log('Fetching game state for sessionId:', sessionId);
 
     fetch(`http://localhost:5000/api/game/session/${sessionId}/state`, {
       credentials: 'include',
     })
       .then((res) => res.json())
       .then((game) => {
-        console.log('Game state received:', game);
         syncWithBackend(game);
       })
       .catch((err) => {
@@ -34,12 +35,20 @@ const PlayPage: React.FC = () => {
   }, [sessionId]);
 
   const syncWithBackend = (game: any) => {
-    console.log('Syncing with backend game data:', game);
-    setDeck(game.deck);
-    setDiscardPile(game.discardPile);
-    setCanvasZones(game.canvas || game.elements);
-    setHand(game.players[playerIndex]?.hand || []);
-    setPlayedCards(game.playedCards || []);
+    const session = game.session || game;
+
+    if (!session || !Array.isArray(session.players) || typeof session.turn !== 'number') {
+      console.warn('❗Invalid game state received. Skipping sync.');
+      return;
+    }
+
+    setDeck(Array.isArray(session.deck) ? session.deck : []);
+    setDiscardPile(Array.isArray(session.discardPile) ? session.discardPile : []);
+    setCanvasZones(session.canvas || session.elements || []);
+    setHand(session.players[playerIndex]?.hand || []);
+    setPlayedCards(Array.isArray(session.playedCards) ? session.playedCards : []);
+    addLog(`🔄 Turn: ${session.turn} (${session.players[session.turn]?.name || 'Unknown'})`);
+    setLogs(Array.isArray(session.logs) ? session.logs : []);
   };
 
   const postAction = async (type: string, extra: Record<string, any> = {}) => {
@@ -51,8 +60,6 @@ const PlayPage: React.FC = () => {
       ...extra,
     };
 
-    console.log('Posting action to backend:', payload);
-
     try {
       const res = await fetch(`http://localhost:5000/api/game/session/${sessionId}/action`, {
         method: 'POST',
@@ -61,33 +68,26 @@ const PlayPage: React.FC = () => {
         body: JSON.stringify(payload),
       });
 
+      const updated = await res.json();
+      syncWithBackend(updated);
+
       if (!res.ok) {
-        const errorText = await res.text();
-        console.error(`Server responded with status ${res.status}:`, errorText);
+        console.error(`Server responded with status ${res.status}:`, updated);
         throw new Error('Action failed');
       }
-
-      const updated = await res.json();
-      console.log('Received updated game state:', updated);
-      syncWithBackend(updated);
     } catch (err) {
       console.error(`Error performing action "${type}"`, err);
     }
   };
 
   const handlePlayCard = (card: Card, pos: { x: number; y: number }) => {
-    console.log('Attempting to play card:', card, 'at position:', pos);
+    addLog(`🃏 Played card: ${card.name}`);
     postAction('play_card', { cardId: card.id, position: pos });
   };
 
   const handleDrawCard = () => {
-    console.log('Draw card clicked');
+    addLog(`📥 Drew a card`);
     postAction('draw_card');
-  };
-
-  const handleEndTurn = () => {
-    console.log('End turn clicked');
-    postAction('end_turn');
   };
 
   return (
@@ -101,6 +101,7 @@ const PlayPage: React.FC = () => {
           draggedCard={draggedCard}
           onPlayCard={handlePlayCard}
         />
+        <GameLog logs={logs} />
       </div>
 
       <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-3 px-6">
@@ -111,22 +112,13 @@ const PlayPage: React.FC = () => {
             alt={card.name}
             className="h-32 shadow-md rounded border-2 border-white hover:scale-105 transition-transform"
             draggable
-            onDragStart={() => {
-              console.log('Dragging card:', card);
-              setDraggedCard(card);
-            }}
-            onDragEnd={() => {
-              console.log('Stopped dragging card');
-              setDraggedCard(null);
-            }}
+            onDragStart={() => setDraggedCard(card)}
+            onDragEnd={() => setDraggedCard(null)}
           />
         ))}
 
         <button onClick={handleDrawCard} className="bg-blue-500 px-4 py-2 rounded ml-4">
           Draw Card
-        </button>
-        <button onClick={handleEndTurn} className="bg-red-500 px-4 py-2 rounded ml-2">
-          End Turn
         </button>
       </div>
     </div>

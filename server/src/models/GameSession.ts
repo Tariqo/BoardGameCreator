@@ -57,10 +57,14 @@ const GameSessionSchema = new mongoose.Schema({
     type: Array,
     default: [],
   },
-
+  currentStepId: { type: String, default: null }, 
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  logs: { 
+    type: [String],
+    default: [] 
   },
 });
 

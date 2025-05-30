@@ -16,11 +16,11 @@ export function evaluateConditions(
   conditions: Condition[],
   context: EvaluateContext
 ): boolean {
-  console.log('🧠 Evaluating conditions:', conditions);
-  console.log('📦 Evaluation context:', context);
+  // console.log('🧠 Evaluating conditions:', conditions);
+  // console.log('📦 Evaluation context:', context);
 
   return conditions.every(cond => {
-    console.log('🔍 Checking condition:', cond);
+    // console.log('🔍 Checking condition:', cond);
 
     // ⛑ Infer type if missing
     const inferredType = cond.type || ('attribute' in cond ? 'attribute' : 'card');

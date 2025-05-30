@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -7,7 +7,7 @@ import {
 } from 'react-router-dom';
 
 import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage'; // ✅ New import
+import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
 import EditorPage from './pages/EditorPage';
 import GamesPage from './pages/GamesPage';
@@ -27,38 +27,41 @@ const TrackLastPath: React.FC = () => {
   return null;
 };
 
-const AppRoutes: React.FC = () => (
-  <>
-    <TrackLastPath />
-    <Routes>
-      <Route path="/games" element={<GamesPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
+const AppRoutes: React.FC = () => {
+  const [search, setSearch] = useState('');
 
-      <Route
-        path="/profile"
-        element={
-          <PrivateRoute>
-            <ProfilePage />
-          </PrivateRoute>
-        }
-      />
+  return (
+    <>
+      <TrackLastPath />
+      <Routes>
+        <Route path="/games" element={<GamesPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
 
-      <Route
-        path="/editor"
-        element={
-          <PrivateRoute>
-            <EditorPage />
-          </PrivateRoute>
-        }
-      />
-      <Route path="/play" element={<PlayPage />} />
-      <Route path="/play/session/:sessionId" element={<PlayPage />} />
-      <Route path="*" element={<GamesPage />} />
-    </Routes>
-  </>
-);
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <ProfilePage search={search} setSearch={setSearch} />
+            </PrivateRoute>
+          }
+        />
 
+        <Route
+          path="/editor"
+          element={
+            <PrivateRoute>
+              <EditorPage />
+            </PrivateRoute>
+          }
+        />
+        <Route path="/play" element={<PlayPage />} />
+        <Route path="/play/session/:sessionId" element={<PlayPage />} />
+        <Route path="*" element={<GamesPage />} />
+      </Routes>
+    </>
+  );
+};
 
 const App: React.FC = () => {
   return (

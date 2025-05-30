@@ -7,11 +7,15 @@ interface Game {
   _id: string;
   name: string;
   createdAt: string;
+  tags?: string[];
 }
 
 const GamesPage: React.FC = () => {
   const navigate = useNavigate();
   const [games, setGames] = useState<Game[]>([]);
+  const [filteredGames, setFilteredGames] = useState<Game[]>([]);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [search, setSearch] = useState<string>('');
 
   useEffect(() => {
     fetch('http://localhost:5000/api/published/my', {
@@ -21,12 +25,34 @@ const GamesPage: React.FC = () => {
       .then((data) => {
         if (data.success) {
           setGames(data.data);
+          setFilteredGames(data.data);
         }
       })
       .catch((err) => {
         console.error('Failed to fetch user games:', err);
       });
   }, []);
+
+  useEffect(() => {
+    const lowerSearch = search.toLowerCase();
+    const byTag = activeTag
+      ? games.filter((game) =>
+          (game.tags || []).map((t) => t.toLowerCase()).includes(activeTag.toLowerCase())
+        )
+      : games;
+
+    const finalFiltered = byTag.filter(
+      (game) =>
+        game.name.toLowerCase().includes(lowerSearch) ||
+        (game.tags || []).some((tag) => tag.toLowerCase().includes(lowerSearch))
+    );
+
+    setFilteredGames(finalFiltered);
+  }, [search, activeTag, games]);
+
+  const handleTagClick = (tag: string) => {
+    setActiveTag(tag);
+  };
 
   const handleStartGame = async (gameId: string) => {
     try {
@@ -49,16 +75,18 @@ const GamesPage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <GamesTopbar />
+      <GamesTopbar search={search} setSearch={setSearch} />
 
       <div className="flex flex-1">
-        <GamesSidebar />
+        <GamesSidebar onTagClick={handleTagClick} />
 
         <main className="flex-1 p-6 overflow-y-auto">
-          <h1 className="text-2xl font-semibold text-gray-800 mb-4">My Games</h1>
+          <h1 className="text-2xl font-semibold text-gray-800 mb-4">
+            {activeTag ? `Games tagged with "${activeTag}"` : 'My Games'}
+          </h1>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {games.map((game) => (
+            {filteredGames.map((game) => (
               <div
                 key={game._id}
                 className="bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition cursor-pointer"
@@ -77,7 +105,7 @@ const GamesPage: React.FC = () => {
             ))}
           </div>
 
-          {games.length === 0 && (
+          {filteredGames.length === 0 && (
             <div className="mt-10 text-center text-gray-400 text-sm">
               No games found. Try publishing one from the editor!
             </div>

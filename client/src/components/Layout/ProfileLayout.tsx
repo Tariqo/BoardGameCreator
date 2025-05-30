@@ -7,15 +7,17 @@ import ProfileTopbar from './ProfileTopbar';
 interface Props {
   children: React.ReactNode;
   rightPanel?: React.ReactNode;
+  search: string;
+  setSearch: (value: string) => void;
 }
 
-const ProfileLayout: React.FC<Props> = ({ children, rightPanel }) => {
+const ProfileLayout: React.FC<Props> = ({ children, rightPanel, search, setSearch }) => {
   return (
     <div className="flex h-screen">
       <ProfileSidebar />
 
       <div className="flex flex-col flex-1 overflow-hidden">
-        <ProfileTopbar />
+        <ProfileTopbar search={search} setSearch={setSearch} />
 
         <div className="flex flex-1 overflow-hidden">
           <main className="flex-1 overflow-auto bg-gray-50 p-6">
