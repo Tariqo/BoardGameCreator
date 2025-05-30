@@ -21,11 +21,23 @@ dotenv.config();
 
 const app = express();
 
+// ✅ Debug middleware to log requests
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log('Origin:', req.headers.origin);
+  console.log('ALLOWED_ORIGINS:', process.env.ALLOWED_ORIGINS);
+  next();
+});
+
 // ✅ Configure CORS with credentials
 app.use(cors({
   origin: function(origin, callback) {
+    console.log('Incoming origin:', origin);
+    console.log('Configured allowed origins:', process.env.ALLOWED_ORIGINS);
+    
     // allow requests with no origin (like mobile apps or curl requests)
     if (!origin) {
+      console.log('No origin, allowing request');
       callback(null, true);
       return;
     }
@@ -34,9 +46,13 @@ app.use(cors({
       process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) :
       ['http://localhost:3000']; // Default for development
 
+    console.log('Processed allowed origins:', allowedOrigins);
+
     if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log('Origin allowed:', origin);
       callback(null, true);
     } else {
+      console.log('Origin rejected:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -45,6 +61,24 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
   exposedHeaders: ['Set-Cookie'],
 }));
+
+// ✅ Add OPTIONS handling for preflight requests
+app.options('*', (req, res) => {
+  console.log('Handling OPTIONS request');
+  const origin = req.headers.origin;
+  const allowedOrigins = process.env.ALLOWED_ORIGINS ? 
+    process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) :
+    ['http://localhost:3000'];
+
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Expose-Headers', 'Set-Cookie');
+  }
+  res.status(204).end();
+});
 
 // ✅ Middlewares
 app.use(express.json());
@@ -88,6 +122,7 @@ mongoose
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log('Environment:', process.env.NODE_ENV);
   console.log('Allowed Origins:', process.env.ALLOWED_ORIGINS || 'http://localhost:3000 (default)');
 });
 
