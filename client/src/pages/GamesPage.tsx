@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import GamesTopbar from '../components/Layout/GamesTopbar';
 import GamesSidebar from '../components/Layout/GamesSidebar';
 import { useNavigate } from 'react-router-dom';
+import config from '../config/config';
 
 interface Game {
   _id: string;
@@ -18,7 +19,7 @@ const GamesPage: React.FC = () => {
   const [search, setSearch] = useState<string>('');
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/published/my', {
+    fetch(`${config.apiUrl}/api/published/my`, {
       credentials: 'include',
     })
       .then((res) => res.json())
@@ -56,7 +57,7 @@ const GamesPage: React.FC = () => {
 
   const handleStartGame = async (gameId: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/game/session/start/${gameId}`, {
+      const res = await fetch(`${config.apiUrl}/api/game/session/start/${gameId}`, {
         method: 'POST',
         credentials: 'include',
       });

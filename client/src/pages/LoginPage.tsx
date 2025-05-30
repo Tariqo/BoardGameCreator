@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import config from '../config/config';
 
 const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -19,7 +20,7 @@ const LoginPage: React.FC = () => {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/login', {
+      const res = await fetch(`${config.apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // ✅ includes HttpOnly cookie
@@ -94,7 +95,7 @@ const LoginPage: React.FC = () => {
         </button>
 
         <p className="text-sm text-center text-gray-600">
-          Don’t have an account?{' '}
+          Don't have an account?{' '}
           <Link to="/signup" className="text-green-600 hover:underline">
             Sign up
           </Link>

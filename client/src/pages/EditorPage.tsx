@@ -12,6 +12,7 @@ import { Card } from '../types/Card';
 import FlowEditor, { FlowStep } from '../components/GameEditor/FlowEditor';
 import download from 'downloadjs';
 import { BoardElement } from '../types/BoardElement';
+import config from '../config/config';
 
 type ZoneMode = 'draw' | 'discard' | null;
 
@@ -184,7 +185,7 @@ const EditorPage = () => {
     };
 
     try {
-      const res = await fetch('http://localhost:5000/api/published/publish', {
+      const res = await fetch(`${config.apiUrl}/api/published/publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

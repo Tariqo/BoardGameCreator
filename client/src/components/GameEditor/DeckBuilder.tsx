@@ -1,6 +1,7 @@
 import React from 'react';
 import { v4 as uuid } from 'uuid';
 import { Card } from '../../types/Card';
+import config from '../../config/config';
 
 interface DeckBuilderProps {
   deck: Card[];
@@ -25,7 +26,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({
     const formData = new FormData();
     formData.append('sprite', file);
 
-    const response = await fetch('http://localhost:5000/api/assets/upload', {
+    const response = await fetch(`${config.apiUrl}/api/assets/upload`, {
       method: 'POST',
       body: formData,
       credentials: 'include',
@@ -42,7 +43,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({
 
   const deleteSprite = async (publicId: string) => {
     try {
-      await fetch('http://localhost:5000/api/assets/delete', {
+      await fetch(`${config.apiUrl}/api/assets/delete`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

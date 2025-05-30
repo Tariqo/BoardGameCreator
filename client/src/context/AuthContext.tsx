@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import config from '../config/config';
 
 interface User {
   username: string;
@@ -24,7 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const fetchMe = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/users/me', {
+        const res = await fetch(`${config.apiUrl}/api/users/me`, {
           method: 'GET',
           credentials: 'include',
         });
@@ -56,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await fetch('http://localhost:5000/api/auth/logout', {
+      await fetch(`${config.apiUrl}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });

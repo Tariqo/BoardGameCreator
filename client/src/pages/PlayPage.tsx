@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import GamePlayCanvas from '../components/GameplayUI/GamePlayCanvas';
 import PlayTopbar from '../components/Layout/PlayTopbar';
 import GameLog from '../components/GameplayUI/GameLog';
+import config from '../config/config';
 
 const PlayPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -22,7 +23,7 @@ const PlayPage: React.FC = () => {
   useEffect(() => {
     if (!sessionId) return;
 
-    fetch(`http://localhost:5000/api/game/session/${sessionId}/state`, {
+    fetch(`${config.apiUrl}/api/game/session/${sessionId}/state`, {
       credentials: 'include',
     })
       .then((res) => res.json())
@@ -61,7 +62,7 @@ const PlayPage: React.FC = () => {
     };
 
     try {
-      const res = await fetch(`http://localhost:5000/api/game/session/${sessionId}/action`, {
+      const res = await fetch(`${config.apiUrl}/api/game/session/${sessionId}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

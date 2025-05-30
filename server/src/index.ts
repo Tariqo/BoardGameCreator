@@ -12,7 +12,6 @@ import userRoutes from './routes/userRoutes';
 import projectRoutes from './routes/projectRoutes';
 import assetRoutes from './routes/assetRoutes';
 import gameLogicRoutes from './routes/gameLogicRoutes';
-import { errorHandler } from './middleware/errorHandler';
 // import gameRoutes from './routes/gameRoutes';
 import publishedGameRoutes from './routes/publishedGameRoutes';
 import gameSessionRoutes from './routes/gameSessionRoutes';
@@ -23,10 +22,11 @@ dotenv.config();
 const app = express();
 
 // ✅ CORS - allow cookies from frontend
-app.use(cors({
-  origin: 'http://localhost:3000',
+const corsOptions = {
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true,
-}));
+};
+app.use(cors(corsOptions));
 
 // ✅ Middlewares
 app.use(express.json());
@@ -53,8 +53,7 @@ app.use('/api/published', publishedGameRoutes);
 
 app.use('/api/game', gameSessionRoutes);
 
-// ✅ Global Error Handler (always last)
-app.use(errorHandler);
+
 
 // ✅ Connect to MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/tabletop-studio';
@@ -67,5 +66,5 @@ mongoose
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });

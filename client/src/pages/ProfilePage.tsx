@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { Game } from '../types/Game';
 import { useNavigate } from 'react-router-dom';
 import ProfileLayout from '../components/Layout/ProfileLayout';
+import config from '../config/config';
 
 interface ProfilePageProps {
   search: string;
@@ -19,7 +20,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ search, setSearch }) => {
   useEffect(() => {
     if (!user) return;
 
-    fetch('http://localhost:5000/api/published/my', {
+    fetch(`${config.apiUrl}/api/published/my`, {
       credentials: 'include',
     })
       .then((res) => res.json())
@@ -43,7 +44,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ search, setSearch }) => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 text-center px-4">
         <div className="space-y-4">
-          <h2 className="text-2xl font-semibold text-gray-800">You’re not logged in</h2>
+          <h2 className="text-2xl font-semibold text-gray-800">You're not logged in</h2>
           <p className="text-gray-500">
             Please <a href="/login" className="text-green-600 underline">sign in</a> to access your profile.
           </p>

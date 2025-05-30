@@ -1,8 +1,10 @@
+import config from '../config/config';
+
 export const uploadSprite = async (file: File, token?: string): Promise<string> => {
   const formData = new FormData();
   formData.append('sprite', file);
 
-  const response = await fetch('http://localhost:5000/api/assets/upload', {
+  const response = await fetch(`${config.apiUrl}/api/assets/upload`, {
     method: 'POST',
     headers: token
       ? { Authorization: `Bearer ${token}` }
