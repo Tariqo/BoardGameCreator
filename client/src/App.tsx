@@ -14,6 +14,7 @@ import GamesPage from './pages/GamesPage';
 import PlayPage from './pages/PlayPage';
 import PrivateRoute from './components/Auth/PrivateRoute';
 import { AuthProvider } from './context/AuthContext';
+import { startUserSession, endUserSession, trackUserPresence } from './utils/analytics';
 
 const TrackLastPath: React.FC = () => {
   const location = useLocation();
@@ -29,6 +30,27 @@ const TrackLastPath: React.FC = () => {
 
 const AppRoutes: React.FC = () => {
   const [search, setSearch] = useState('');
+  const location = useLocation();
+
+  // Track session duration
+  useEffect(() => {
+    const sessionStartTime = Date.now();
+    startUserSession();
+    trackUserPresence(true);
+
+    const handleVisibilityChange = () => {
+      trackUserPresence(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      const duration = Math.floor((Date.now() - sessionStartTime) / 1000);
+      endUserSession(duration);
+      trackUserPresence(false);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   return (
     <>

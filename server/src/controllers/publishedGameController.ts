@@ -13,7 +13,7 @@ export const savePublishedGame = async (req: Request, res: Response): Promise<Re
       ...req.body,
       creator: userId,
     };
-
+    
     const game = await PublishedGame.create(gameData);
     return res.json({ success: true, data: game });
   } catch (error) {

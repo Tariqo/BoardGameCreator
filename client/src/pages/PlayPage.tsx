@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Card } from '../types/Card';
 import { BoardElement } from '../types/BoardElement';
 import { useParams } from 'react-router-dom';
@@ -6,19 +6,78 @@ import GamePlayCanvas from '../components/GameplayUI/GamePlayCanvas';
 import PlayTopbar from '../components/Layout/PlayTopbar';
 import GameLog from '../components/GameplayUI/GameLog';
 import config from '../config/config';
+import { trackGameEnd, trackPlayPageMinutes } from '../utils/analytics';
+
+interface GameState {
+  session: {
+    gameId: string;
+    gameName: string;
+    players: any[];
+    turn: number;
+    deck: Card[];
+    discardPile: Card[];
+    canvas?: BoardElement[];
+    elements?: BoardElement[];
+    playedCards: Card[];
+    logs: string[];
+  };
+}
+
+type RouteParams = {
+  sessionId?: string;
+}
 
 const PlayPage: React.FC = () => {
-  const { sessionId } = useParams<{ sessionId: string }>();
+  const params = useParams<keyof RouteParams>();
+  const sessionId = params.sessionId;
   const [deck, setDeck] = useState<Card[]>([]);
   const [discardPile, setDiscardPile] = useState<Card[]>([]);
   const [canvasZones, setCanvasZones] = useState<BoardElement[]>([]);
   const [hand, setHand] = useState<Card[]>([]);
   const [playedCards, setPlayedCards] = useState<Card[]>([]);
   const [draggedCard, setDraggedCard] = useState<Card | null>(null);
+  const [gameState, setGameState] = useState<GameState | null>(null);
   const playerIndex = 0;
+  const minuteIntervalRef = useRef<number | undefined>(undefined);
+  const minutesSpentRef = useRef<number>(0);
 
   const [logs, setLogs] = useState<string[]>([]);
   const addLog = (entry: string) => setLogs((prev) => [...prev.slice(-50), entry]);
+
+  // Track minutes spent on play page
+  useEffect(() => {
+    // Track every minute
+    minuteIntervalRef.current = window.setInterval(() => {
+      minutesSpentRef.current += 1;
+      trackPlayPageMinutes(gameState?.session?.gameId, minutesSpentRef.current);
+    }, 60000); // Every minute
+
+    return () => {
+      if (minuteIntervalRef.current) {
+        window.clearInterval(minuteIntervalRef.current);
+      }
+      // Final tracking of minutes spent
+      if (minutesSpentRef.current > 0) {
+        trackPlayPageMinutes(gameState?.session?.gameId, minutesSpentRef.current);
+      }
+    };
+  }, [gameState?.session?.gameId]);
+
+  // Track game session duration
+  useEffect(() => {
+    const sessionStartTime = Date.now();
+
+    return () => {
+      if (gameState?.session) {
+        const duration = Math.floor((Date.now() - sessionStartTime) / 1000);
+        trackGameEnd(
+          gameState.session.gameId,
+          gameState.session.gameName,
+          duration
+        );
+      }
+    };
+  }, [gameState?.session]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -29,6 +88,7 @@ const PlayPage: React.FC = () => {
       .then((res) => res.json())
       .then((game) => {
         syncWithBackend(game);
+        setGameState(game);
       })
       .catch((err) => {
         console.error('Failed to fetch game state', err);

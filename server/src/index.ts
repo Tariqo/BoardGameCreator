@@ -63,7 +63,7 @@ app.use(cors({
 }));
 
 // ✅ Add OPTIONS handling for preflight requests
-app.options('*', (req, res) => {
+app.options(/.*/, (req, res) => {
   console.log('Handling OPTIONS request');
   const origin = req.headers.origin;
   const allowedOrigins = process.env.ALLOWED_ORIGINS ? 

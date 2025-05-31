@@ -3,6 +3,7 @@ import GamesTopbar from '../components/Layout/GamesTopbar';
 import GamesSidebar from '../components/Layout/GamesSidebar';
 import { useNavigate } from 'react-router-dom';
 import config from '../config/config';
+import { trackGamePageView, trackGameStart } from '../utils/analytics';
 
 interface Game {
   _id: string;
@@ -47,6 +48,13 @@ const GamesPage: React.FC = () => {
       });
   }, []);
 
+  // Track game views when filtered games change
+  useEffect(() => {
+    filteredGames.forEach(game => {
+      trackGamePageView(game._id, game.name);
+    });
+  }, [filteredGames]);
+
   useEffect(() => {
     const lowerSearch = search.toLowerCase();
     const byTag = activeTag
@@ -71,6 +79,11 @@ const GamesPage: React.FC = () => {
 
   const handleStartGame = async (gameId: string) => {
     try {
+      const game = games.find(g => g._id === gameId);
+      if (game) {
+        trackGameStart(gameId, game.name);
+      }
+
       const res = await fetch(`${config.apiUrl}/api/game/session/start/${gameId}`, {
         method: 'POST',
         credentials: 'include',

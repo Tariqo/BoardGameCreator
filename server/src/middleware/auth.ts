@@ -17,20 +17,20 @@ export const authenticateToken = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const token = req.cookies?.token;
+  const token = req.cookies?.token;
 
-    if (!token) {
-      res.status(401).json({
-        success: false,
-        message: 'Authentication token is required',
-      });
-      return;
-    }
+  if (!token) {
+    res.status(401).json({
+      success: false,
+      message: 'Authentication token is required',
+    });
+    return;
+  }
 
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new Error('JWT_SECRET is not defined in environment variables');
-    }
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET is not defined in environment variables');
+  }
 
     const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
     
@@ -63,11 +63,11 @@ export const authenticateToken = async (
       });
       return;
     }
-    
+
     res.status(500).json({
       success: false,
       message: 'Internal server error during authentication',
-    });
+  });
   }
 };
 
