@@ -6,6 +6,7 @@ const config = {
     credentials: 'include' as RequestCredentials,
     headers: {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
     },
   },
 };
