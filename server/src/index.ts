@@ -70,7 +70,7 @@ app.use('/api/published', publishedGameRoutes);
 app.use('/api/game', gameSessionRoutes);
 
 // Handle React routing, return all requests to React app
-app.get('*', (req, res, next) => {
+app.get('/(.*)/', (req, res, next) => {
   if (req.url.startsWith('/api/') || req.url.startsWith('/sprites/') || req.url.startsWith('/uploads/')) {
     next();
   } else {
