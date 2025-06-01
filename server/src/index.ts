@@ -80,9 +80,7 @@ app.get('/{*any}', (req, res, next) => {
   if (req.url.startsWith('/api/') || req.url.startsWith('/sprites/') || req.url.startsWith('/uploads/')) {
     next();
   } else {
-    const indexPath = process.env.NODE_ENV === 'production'
-      ? path.join(process.cwd(), 'client/build/index.html')
-      : path.join(__dirname, '../../client/build/index.html');
+    const indexPath = path.resolve(__dirname, '../client/build/index.html');
 
     if (fs.existsSync(indexPath)) {
       console.log('✅ Serving index.html from:', indexPath);
