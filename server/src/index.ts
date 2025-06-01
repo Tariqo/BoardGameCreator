@@ -54,9 +54,15 @@ if (!fs.existsSync(uploadsDir)) {
 app.use('/uploads', express.static(uploadsDir));
 
 // Serve static files from the React app
-const clientBuildPath = path.join(__dirname, '../../client/build');
+const clientBuildPath = process.env.NODE_ENV === 'production' 
+  ? path.join(process.cwd(), 'client/build')
+  : path.join(__dirname, '../../client/build');
+
 if (fs.existsSync(clientBuildPath)) {
+  console.log('✅ Serving static files from:', clientBuildPath);
   app.use(express.static(clientBuildPath));
+} else {
+  console.log('❌ Client build directory not found at:', clientBuildPath);
 }
 
 // API Routes
@@ -70,15 +76,20 @@ app.use('/api/published', publishedGameRoutes);
 app.use('/api/game', gameSessionRoutes);
 
 // Handle React routing, return all requests to React app
-app.get('/(.*)/', (req, res, next) => {
+app.get('{*}', (req, res, next) => {
   if (req.url.startsWith('/api/') || req.url.startsWith('/sprites/') || req.url.startsWith('/uploads/')) {
     next();
   } else {
-    const indexPath = path.join(__dirname, '../../client/build/index.html');
+    const indexPath = process.env.NODE_ENV === 'production'
+      ? path.join(process.cwd(), 'client/build/index.html')
+      : path.join(__dirname, '../../client/build/index.html');
+
     if (fs.existsSync(indexPath)) {
+      console.log('✅ Serving index.html from:', indexPath);
       res.sendFile(indexPath);
     } else {
-      res.status(404).send('Application not built. Please run npm run build in the client directory.');
+      console.log('❌ index.html not found at:', indexPath);
+      res.status(404).send(`Application not built. Please run npm run build in the client directory. Tried path: ${indexPath}`);
     }
   }
 });
