@@ -156,18 +156,17 @@ export const postGameAction = async (req: Request, res: Response): Promise<any> 
         session.playedCards.push({ ...card, x: position?.x ?? 0, y: position?.y ?? 0 });
         session.lastPlayedTags = card.tags || [];
         if (card.effect === 'discard') session.discardPile.push(card);
-        
-        const configuredMaxPlayers = typeof session.ruleSet?.maxPlayers === 'number' ? session.ruleSet.maxPlayers : undefined;
-        if (configuredMaxPlayers && session.players.length === configuredMaxPlayers) {
-          session.turn = (session.turn + 1) % session.players.length;
-        } else {
-          if (card.effect === 'reverse') session.direction *= -1;
-          session.turn = (session.turn + (card.effect === 'skip' ? 2 : 1) * session.direction + session.players.length) % session.players.length;
+
+        if (card.effect === 'reverse') {
+            session.direction *= -1;
+            session.logs.push(`🔄 Play direction reversed!`);
+            session.markModified('direction'); 
         }
 
         session.markModified('players');
         session.markModified('playedCards');
         session.markModified('discardPile');
+        session.markModified('logs');
         break;
       }
       case 'draw_card': {
@@ -176,17 +175,39 @@ export const postGameAction = async (req: Request, res: Response): Promise<any> 
           return;
         }
         const drawn = session.deck.shift();
-        if (drawn) hand.push(drawn);
+        if (drawn) {
+          hand.push(drawn);
+          session.logs.push(`✏️ ${player.name} drew a card.`);
+        }
         session.markModified('players');
+        session.markModified('logs');
         break;
       }
       case 'end_turn': {
-        const configuredMaxPlayers = typeof session.ruleSet?.maxPlayers === 'number' ? session.ruleSet.maxPlayers : undefined;
-        if (configuredMaxPlayers && session.players.length === configuredMaxPlayers) {
-          session.turn = (session.turn + 1) % session.players.length;
-        } else {
-          session.turn = (session.turn + session.direction + session.players.length) % session.players.length;
-        }
+        // This case handles when a player explicitly clicks the "End Turn" button.
+        // The game flow might also have "end_turn" steps that are handled by executeAutoSteps.
+        const oldTurn = session.turn;
+        const playerEndingTurn = session.players[oldTurn]?.name || 'A player';
+
+        // Add any logic here for effects that happen specifically on manual turn end,
+        // or if a card played earlier this turn modifies how the turn ends (e.g., skip).
+        // For now, basic turn advancement:
+        let turnIncrement = 1;
+        // Example: if (session.applySkipEffectOnTurnEnd) { turnIncrement = 2; session.applySkipEffectOnTurnEnd = false; }
+
+        session.turn = (session.turn + (turnIncrement * session.direction) + session.players.length) % session.players.length;
+        
+        session.logs.push(`🏁 ${playerEndingTurn} ended their turn.`);
+        // This log might be redundant if executeAutoSteps also logs for an 'end_turn' game flow step.
+        // Consider if executeAutoSteps's 'end_turn' log is sufficient or if this provides valuable context for manual end turns.
+        // If executeAutoSteps handles an 'end_turn' step immediately after this, it might log again with the new player's turn.
+        // For now, let's keep it to see the sequence.
+        // session.logs.push(`  ➡️ Next player is ${session.players[session.turn]?.name || 'Unknown'}.`);
+
+        session.markModified('turn');
+        session.markModified('players'); // If hand was modified and not marked earlier
+        session.markModified('logs');
+        // session.markModified('skipNextTurn'); // If using a skip flag
         break;
       }
       case 'reverse_order': {
