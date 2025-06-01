@@ -285,6 +285,8 @@ const PlayPage: React.FC = () => {
   const isMyTurn = gameState?.turn === currentPlayerIndex;
   const currentTurnPlayerName = gameState?.players[gameState.turn]?.name || 'Unknown';
 
+  console.log('[PlayPage Render] isMyTurn:', isMyTurn, 'currentPlayerIndex:', currentPlayerIndex, 'Hand state length:', hand.length, 'Hand state content:', JSON.stringify(hand).substring(0, 100) + "...");
+
   return (
     <div className="relative w-full h-screen bg-green-800 text-white overflow-hidden flex flex-col">
       <PlayTopbar wsRef={wsRef} sessionId={sessionId} />
