@@ -8,7 +8,7 @@ const allowedOrigins = [
 ];
 
 export const corsMiddleware = cors({
-  origin: function (origin, callback) {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
@@ -23,10 +23,11 @@ export const corsMiddleware = cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 });
 
-export const optionsMiddleware = (req: Request, res: Response, next: NextFunction) => {
+export const optionsMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   if (req.method === 'OPTIONS') {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-    return res.status(200).json({});
+    res.status(200).json({});
+    return;
   }
   next();
 }; 
