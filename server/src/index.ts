@@ -37,10 +37,11 @@ app.use(optionsMiddleware);
 app.use(express.json());
 app.use(cookieParser());
 app.use(fileUpload({
+  useTempFiles: true,
+  tempFileDir: '/tmp/',
   createParentPath: true,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
+  limits: { fileSize: 50 * 1024 * 1024 },
 }));
-
 // Serve uploaded sprite files
 const spritesPath = path.join(__dirname, '../../uploads/sprites');
 fs.mkdirSync(spritesPath, { recursive: true });
