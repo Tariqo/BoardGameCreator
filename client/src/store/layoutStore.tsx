@@ -1,69 +1,150 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-// Define layout types
 type LayoutType = 'layout1' | 'layout2';
 
-// Define player names
-export type PlayerName = 'Player A' | 'Player B';
-
-// Define card structure
 export interface Card {
   id: number;
   name: string;
   count: number;
 }
 
-// Define the context value type
+export interface Player {
+  id: string;
+  name: string;
+  hand: Card[];
+  rules: string[];
+}
+
 interface LayoutContextProps {
   currentLayout: LayoutType;
   setLayout: (layout: LayoutType) => void;
-  playerCards: Record<PlayerName, Card[]>;
-  addCard: (player: PlayerName, card: Card) => void;
-  updateCard: (player: PlayerName, cardId: number, delta: number) => void;
-  deleteCard: (player: PlayerName, cardId: number) => void;
+
+  players: Player[];
+  addPlayer: (name: string) => void;
+  removePlayer: (id: string) => void;
+  addCardToPlayer: (playerId: string, card: Card) => void;
+  updatePlayerCard: (playerId: string, cardId: number, delta: number) => void;
+  removePlayerCard: (playerId: string, cardId: number) => void;
+  replacePlayerHand: (playerId: string, newHand: Card[]) => void;
+
+  drawPile: Card[];
+  discardPile: Card[];
+  drawCard: (playerId: string) => void;
+  playCard: (playerId: string, cardId: number) => void;
+
+  addPlayerRule: (playerId: string, rule: string) => void;
+  removePlayerRule: (playerId: string, ruleIndex: number) => void;
+
+  maxPlayers: number;
+  setMaxPlayers: (count: number) => void;
 }
 
-// Define the props type for the provider component
 interface LayoutProviderProps {
   children: ReactNode;
 }
 
-// Create context with default value undefined
 const LayoutContext = createContext<LayoutContextProps | undefined>(undefined);
 
-// Define the provider component
 export const LayoutProvider: React.FC<LayoutProviderProps> = ({ children }) => {
   const [currentLayout, setCurrentLayout] = useState<LayoutType>('layout1');
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [drawPile, setDrawPile] = useState<Card[]>([
+    { id: 1, name: 'Generic Card 1', count: 1 },
+    { id: 2, name: 'Generic Card 2', count: 1 },
+    { id: 3, name: 'Generic Card 3', count: 1 },
+  ]);
+  const [discardPile, setDiscardPile] = useState<Card[]>([]);
+  const [maxPlayers, setMaxPlayers] = useState<number>(4);
 
-  const [playerCards, setPlayerCards] = useState<Record<PlayerName, Card[]>>({
-    'Player A': [],
-    'Player B': [],
-  });
-
-  // Add a new card to the player's hand
-  const addCard = (player: PlayerName, card: Card) => {
-    setPlayerCards((prev) => ({
+  const addPlayer = (name: string) => {
+    if (players.length >= maxPlayers) return;
+    setPlayers((prev) => [
       ...prev,
-      [player]: [...prev[player], card],
-    }));
+      { id: crypto.randomUUID(), name, hand: [], rules: [] },
+    ]);
   };
 
-  // Update card count by delta
-  const updateCard = (player: PlayerName, cardId: number, delta: number) => {
-    setPlayerCards((prev) => ({
-      ...prev,
-      [player]: prev[player].map((card) =>
-        card.id === cardId ? { ...card, count: card.count + delta } : card
-      ),
-    }));
+  const removePlayer = (id: string) => {
+    setPlayers((prev) => prev.filter((p) => p.id !== id));
   };
 
-  // Delete a card
-  const deleteCard = (player: PlayerName, cardId: number) => {
-    setPlayerCards((prev) => ({
-      ...prev,
-      [player]: prev[player].filter((card) => card.id !== cardId),
-    }));
+  const addCardToPlayer = (playerId: string, card: Card) => {
+    setPlayers((prev) =>
+      prev.map((p) =>
+        p.id === playerId ? { ...p, hand: [...p.hand, card] } : p
+      )
+    );
+  };
+
+  const updatePlayerCard = (playerId: string, cardId: number, delta: number) => {
+    setPlayers((prev) =>
+      prev.map((p) =>
+        p.id === playerId
+          ? {
+              ...p,
+              hand: p.hand.map((card) =>
+                card.id === cardId
+                  ? { ...card, count: card.count + delta }
+                  : card
+              ),
+            }
+          : p
+      )
+    );
+  };
+
+  const removePlayerCard = (playerId: string, cardId: number) => {
+    setPlayers((prev) =>
+      prev.map((p) =>
+        p.id === playerId
+          ? { ...p, hand: p.hand.filter((card) => card.id !== cardId) }
+          : p
+      )
+    );
+  };
+
+  const replacePlayerHand = (playerId: string, newHand: Card[]) => {
+    setPlayers((prev) =>
+      prev.map((p) =>
+        p.id === playerId ? { ...p, hand: newHand } : p
+      )
+    );
+  };
+
+  const drawCard = (playerId: string) => {
+    if (drawPile.length === 0) return;
+    const [topCard, ...rest] = drawPile;
+    setDrawPile(rest);
+    addCardToPlayer(playerId, { ...topCard, id: Date.now() });
+  };
+
+  const playCard = (playerId: string, cardId: number) => {
+    const player = players.find((p) => p.id === playerId);
+    if (!player) return;
+
+    const card = player.hand.find((c) => c.id === cardId);
+    if (!card) return;
+
+    removePlayerCard(playerId, cardId);
+    setDiscardPile((prev) => [card, ...prev]);
+  };
+
+  const addPlayerRule = (playerId: string, rule: string) => {
+    setPlayers((prev) =>
+      prev.map((p) =>
+        p.id === playerId ? { ...p, rules: [...p.rules, rule] } : p
+      )
+    );
+  };
+
+  const removePlayerRule = (playerId: string, ruleIndex: number) => {
+    setPlayers((prev) =>
+      prev.map((p) =>
+        p.id === playerId
+          ? { ...p, rules: p.rules.filter((_, i) => i !== ruleIndex) }
+          : p
+      )
+    );
   };
 
   return (
@@ -71,10 +152,21 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({ children }) => {
       value={{
         currentLayout,
         setLayout: setCurrentLayout,
-        playerCards,
-        addCard,
-        updateCard,
-        deleteCard,
+        players,
+        addPlayer,
+        removePlayer,
+        addCardToPlayer,
+        updatePlayerCard,
+        removePlayerCard,
+        replacePlayerHand,
+        drawPile,
+        discardPile,
+        drawCard,
+        playCard,
+        addPlayerRule,
+        removePlayerRule,
+        maxPlayers,
+        setMaxPlayers,
       }}
     >
       {children}
@@ -82,7 +174,6 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({ children }) => {
   );
 };
 
-// Custom hook to use the layout context
 export const useLayout = (): LayoutContextProps => {
   const context = useContext(LayoutContext);
   if (!context) {

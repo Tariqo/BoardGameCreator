@@ -1,0 +1,55 @@
+.app-shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 80px;
+  background: #f0f0f0;
+  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-right: 1px solid #ccc;
+}
+
+.sidebar-section {
+  text-align: center;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.main-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  height: 60px;
+  background: #fff;
+  border-bottom: 1px solid #ccc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1rem;
+}
+
+.topbar-buttons button {
+  margin-left: 0.5rem;
+}
+
+.publish {
+  background-color: #5b3cc4;
+  color: white;
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: 6px;
+}
+
+.content-area {
+  flex: 1;
+  background: #fafafa;
+  padding: 1rem;
+}

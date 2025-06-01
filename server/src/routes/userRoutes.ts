@@ -1,16 +1,20 @@
 import express from 'express';
-import { getProfile, updateProfile } from '../controllers/userController';
-import { authenticateToken } from '../middleware/auth';
+import {
+  getProfile,
+  updateProfile,
+  getMe,
+} from '../controllers/userController';
+import { authenticateToken, attachUser } from '../middleware/auth';
 
 const router = express.Router();
 
-// Apply authentication middleware to all routes
 router.use(authenticateToken);
 
-// Get user profile
-router.get('/profile', getProfile);
+router.use(attachUser);
 
-// Update user profile
+router.get('/me', getMe);
+
+router.get('/profile', getProfile);
 router.put('/profile', updateProfile);
 
-export default router; 
+export default router;

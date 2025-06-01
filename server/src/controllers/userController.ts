@@ -14,7 +14,7 @@ export const getProfile = async (
 ): Promise<void> => {
   try {
     const user = await User.findById(req.userId).select('-password');
-    
+
     if (!user) {
       throw new NotFoundError('User not found');
     }
@@ -40,33 +40,34 @@ export const updateProfile = async (
 ): Promise<void> => {
   try {
     const { email, username, currentPassword, newPassword } = req.body;
-    const user = await User.findById(req.userId);
 
+    const user = await User.findById(req.userId);
     if (!user) {
       throw new NotFoundError('User not found');
     }
 
-    // Check if email or username is being updated and if it's already taken
-    if (email && email !== user.email) {
-      const existingUser = await User.findOne({ email: email.toLowerCase() });
-      if (existingUser) {
+    // Validate and update email
+    if (email && email.toLowerCase() !== user.email) {
+      const emailExists = await User.findOne({ email: email.toLowerCase() });
+      if (emailExists) {
         throw new ConflictError('Email already in use');
       }
       user.email = email.toLowerCase();
     }
 
-    if (username && username !== user.username) {
-      const existingUser = await User.findOne({ username: username.toLowerCase() });
-      if (existingUser) {
+    // Validate and update username
+    if (username && username.toLowerCase() !== user.username) {
+      const usernameExists = await User.findOne({ username: username.toLowerCase() });
+      if (usernameExists) {
         throw new ConflictError('Username already in use');
       }
       user.username = username.toLowerCase();
     }
 
-    // Handle password update if provided
+    // Handle password change
     if (currentPassword && newPassword) {
-      const isPasswordValid = await user.comparePassword(currentPassword);
-      if (!isPasswordValid) {
+      const isValid = await user.comparePassword(currentPassword);
+      if (!isValid) {
         throw new AuthenticationError('Current password is incorrect');
       }
       user.password = newPassword;
@@ -87,4 +88,32 @@ export const updateProfile = async (
   } catch (error: any) {
     next(error);
   }
-}; 
+};
+
+export const getMe = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const user = await User.findById(userId).select('username email');
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User not found' });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          username: user.username,
+          email: user.email,
+        },
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error', error: err });
+  }
+};
