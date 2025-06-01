@@ -1,7 +1,9 @@
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 const config = {
-  apiUrl: process.env.REACT_APP_API_URL || process.env.ALLOWED_ORIGINS?.split(',')[0] || 'http://localhost:5000',
+  apiUrl: isDevelopment 
+    ? 'http://localhost:5000'
+    : 'https://boardgamecreator.onrender.com',
   defaultFetchOptions: {
     credentials: 'include' as RequestCredentials,
     headers: {

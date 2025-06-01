@@ -21,8 +21,8 @@ router.get('/test-cloudinary', async (req, res) => {
 });
 
 // Authenticated image upload route
-// router.use(authenticateToken);
+router.use(authenticateToken);
 router.post('/upload', uploadToCloudinary);
-router.delete('/delete', authenticateToken, deleteFromCloudinary);
+router.delete('/delete', deleteFromCloudinary);
 
 export default router;
