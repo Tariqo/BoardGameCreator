@@ -360,9 +360,10 @@ export const getGameState = async (req: Request, res: Response): Promise<void> =
   }
 };
 
+
 export const joinGameSession = async (req: Request, res: Response): Promise<void> => {
   const { sessionId } = req.params;
-  const authenticatedUser = (req as any).user; // From authenticateToken
+  const authenticatedUser = (req as any).user; // From authenticateToken middleware
 
   if (!authenticatedUser) {
     res.status(401).json({ message: 'User not authenticated.' });
@@ -371,56 +372,63 @@ export const joinGameSession = async (req: Request, res: Response): Promise<void
 
   try {
     const session = await GameSession.findById(sessionId);
-
     if (!session) {
       res.status(404).json({ message: 'Game session not found.' });
       return;
     }
 
-    // Check if user is already in the session (using userId if available, otherwise username)
+    // Check if the user is already in the session
     const userAlreadyInSession = session.players.some(
-      (player: any) => 
-        (player.userId && player.userId.toString() === authenticatedUser._id.toString()) || 
+      (player: any) =>
+        (player.userId && player.userId.toString() === authenticatedUser._id.toString()) ||
         player.name === authenticatedUser.username
     );
 
     if (userAlreadyInSession) {
-      // User is already part of the game, send current state
-      res.status(200).json(session.toObject()); 
+      // If already in session, just return current state
+      res.status(200).json(session.toObject());
       return;
     }
 
-    const maxPlayers = session.ruleSet?.maxPlayers || 2; // Default to 2 if not defined
+    const maxPlayers = session.ruleSet?.maxPlayers ?? 2;
     if (session.players.length >= maxPlayers) {
       res.status(403).json({ message: 'Game session is full.' });
       return;
     }
 
-    // Add the new player
+    // 🃏 Draw initial hand
+    const initialHandCount = session.ruleSet?.initialHandCount ?? 4;
+    const newHand = session.deck.splice(0, initialHandCount);
+
+    // 👤 Create new player object
     const newPlayer = {
-      name: authenticatedUser.username, // Or authenticatedUser.name
-      userId: authenticatedUser._id, // Store the MongoDB ObjectId
-      hand: [], // New players start with an empty hand for now
+      name: authenticatedUser.username,
+      userId: authenticatedUser._id,
+      hand: newHand,
       eliminated: false,
-      // Any other default player properties
     };
+
     session.players.push(newPlayer);
-    session.logs.push(`👋 ${authenticatedUser.username} joined the game!`);
+    session.logs.push(`👋 ${authenticatedUser.username} joined the game and drew ${newHand.length} cards.`);
+
+    // ✅ Ensure changes are tracked
+    session.markModified('players');
+    session.markModified('deck');
+    session.markModified('logs');
 
     await session.save();
 
-    // Broadcast the updated game state to all clients in the session
+    // 📡 Broadcast updated session state
     sendToSession(session._id.toString(), {
-      type: 'game_update', // Or a more specific 'player_joined' type if you prefer
+      type: 'game_update',
       sessionId: session._id.toString(),
       state: session.toObject(),
     });
 
-    console.log(`Player ${authenticatedUser.username} joined session ${sessionId}. Players:`, session.players.map(p=>p.name));
+    console.log(`✅ ${authenticatedUser.username} joined session ${sessionId}`);
     res.status(200).json(session.toObject());
-
   } catch (error) {
-    console.error('Error joining game session:', error);
+    console.error('❌ Error joining game session:', error);
     res.status(500).json({ message: 'Error joining game session.', details: (error as Error).message });
   }
 };
