@@ -53,6 +53,12 @@ if (!fs.existsSync(uploadsDir)) {
 }
 app.use('/uploads', express.static(uploadsDir));
 
+// Serve static files from the React app
+const clientBuildPath = path.join(__dirname, '../../client/build');
+if (fs.existsSync(clientBuildPath)) {
+  app.use(express.static(clientBuildPath));
+}
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -62,6 +68,20 @@ app.use('/api/game-logic', gameLogicRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/published', publishedGameRoutes);
 app.use('/api/game', gameSessionRoutes);
+
+// Handle React routing, return all requests to React app
+app.get('*', (req, res, next) => {
+  if (req.url.startsWith('/api/') || req.url.startsWith('/sprites/') || req.url.startsWith('/uploads/')) {
+    next();
+  } else {
+    const indexPath = path.join(__dirname, '../../client/build/index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send('Application not built. Please run npm run build in the client directory.');
+    }
+  }
+});
 
 // Connect to MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/tabletop-studio';
