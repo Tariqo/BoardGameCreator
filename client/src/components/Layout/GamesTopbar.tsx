@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User, LogOut, Gamepad2, Plus, Search, LogIn } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useWebSocket } from '../../context/WebSocketContext';
+import NotificationsMenu from './NotificationsMenu';
 
 interface Props {
   search: string;
@@ -13,6 +15,7 @@ const GamesTopbar: React.FC<Props> = ({ search, setSearch }) => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { wsRef } = useWebSocket();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -53,6 +56,7 @@ const GamesTopbar: React.FC<Props> = ({ search, setSearch }) => {
 
     {/* Right: Profile Menu */}
     <div className="flex items-center gap-4">
+      {user && <NotificationsMenu wsRef={wsRef} />}
       {user ? (
         <div className="relative" ref={menuRef}>
           <button

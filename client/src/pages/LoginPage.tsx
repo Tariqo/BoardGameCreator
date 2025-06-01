@@ -37,11 +37,11 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      // ✅ Set user in context
+      // Set user in context
       login('user', {
-      username: data.data.user.username,
-      email: data.data.user.email,
-    });
+        username: data.data.user.username,
+        email: data.data.user.email,
+      });
 
       navigate('/games');
     } catch (err) {

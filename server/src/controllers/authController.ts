@@ -96,10 +96,10 @@ export const login = async (
       expiresIn: '24h',
     });
 
-    // ✅ Set token as a secure HTTP-only cookie
+    // Set token as secure, HTTP-only cookie
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false, // Set to true only in production with HTTPS
+      secure: false, // set to true in production
       sameSite: 'lax',
       path: '/',
       maxAge: 24 * 60 * 60 * 1000,
@@ -113,7 +113,7 @@ export const login = async (
           id: user._id,
           email: user.email,
           username: user.username,
-        },
+        }
       },
     });
   } catch (error: any) {
@@ -127,7 +127,6 @@ export const logout = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Clear the cookie on logout
     res.clearCookie('token');
     res.status(200).json({
       success: true,

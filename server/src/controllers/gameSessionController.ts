@@ -4,6 +4,7 @@ import { GameSession } from '../models/GameSession';
 import { evaluateConditions } from '../utils/evaluateConditions';
 import { resolveNextStep } from '../utils/gameFlowManager';
 import { evaluateWinConditions } from '../utils/evaluateWinConditions';
+import { sendToSession } from '../websocketServer';
 
 console.log('🧩 Using evaluateConditions from:', require.resolve('../utils/evaluateConditions'));
 
@@ -81,7 +82,10 @@ export const postGameAction = async (req: Request, res: Response): Promise<any> 
     const player = session.players[playerIndex];
     const hand = player.hand;
 
-    const eliminatedPlayerIds = session.players.map((p, idx) => (p.eliminated ? idx.toString() : null)).filter((id): id is string => id !== null);
+    const eliminatedPlayerIds = session.players
+      .map((p, idx) => (p.eliminated ? idx.toString() : null))
+      .filter((id): id is string => id !== null);
+
     const flowContext = {
       deck: session.deck,
       hand,
@@ -91,7 +95,6 @@ export const postGameAction = async (req: Request, res: Response): Promise<any> 
       eliminatedPlayerIds,
     };
 
-    // 🔄 Execute auto steps before checking current step
     executeAutoSteps(session, flowContext);
 
     let currentStep = session.gameFlow?.find(step => step.id === session.currentStepId);
@@ -198,8 +201,16 @@ export const postGameAction = async (req: Request, res: Response): Promise<any> 
       executeAutoSteps(session, flowContext);
     }
 
+    await session.save();
+
     if ((session as any).winnerIndex != null) {
-      await session.save();
+      sendToSession(session._id.toString(), {
+        type: 'game_over',
+        winnerIndex: (session as any).winnerIndex,
+        sessionId: session._id,
+        state: session.toObject(),
+      });
+
       res.status(200).json({
         message: `${session.players[(session as any).winnerIndex].name} wins!`,
         winnerIndex: (session as any).winnerIndex,
@@ -208,7 +219,12 @@ export const postGameAction = async (req: Request, res: Response): Promise<any> 
       return;
     }
 
-    await session.save();
+    sendToSession(session._id.toString(), {
+      type: 'game_update',
+      sessionId: session._id,
+      state: session.toObject(),
+    });
+
     res.status(200).json(session);
   } catch (err) {
     res.status(500).json({ error: 'Action failed', details: err });
@@ -258,9 +274,16 @@ export const startGameSession = async (req: Request, res: Response): Promise<voi
       totalPlayers: session.players.length,
       eliminatedPlayerIds: [],
     };
-    executeAutoSteps(session, flowContext);
 
+    executeAutoSteps(session, flowContext);
     await session.save();
+
+    sendToSession(session._id.toString(), {
+      type: 'session_started',
+      sessionId: session._id,
+      state: session.toObject(),
+    });
+
     res.status(201).json({ sessionId: session._id });
   } catch (err) {
     res.status(500).json({ error: 'Failed to start game session', details: err });

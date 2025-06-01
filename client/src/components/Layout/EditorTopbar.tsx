@@ -12,13 +12,15 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useWebSocket } from '../../context/WebSocketContext';
+import NotificationsMenu from './NotificationsMenu';
 
 interface EditorTopbarProps {
   isRightPanelVisible: boolean;
   onToggleRightPanel: () => void;
   onToggleGrid: () => void;
   onSaveGame: () => void;
-  onToggleDeckBuilder: () => void; // ✅ Add this line
+  onToggleDeckBuilder: () => void;
   onToggleFlowEditor: () => void;
 }
 
@@ -27,13 +29,14 @@ const EditorTopbar: React.FC<EditorTopbarProps> = ({
   onToggleRightPanel,
   onToggleGrid,
   onSaveGame,
-  onToggleDeckBuilder, // ✅ Include this here too
+  onToggleDeckBuilder,
   onToggleFlowEditor,
 }) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { wsRef } = useWebSocket();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -60,6 +63,8 @@ const EditorTopbar: React.FC<EditorTopbarProps> = ({
 
       {/* Right controls */}
       <div className="flex items-center gap-4">
+        {user && <NotificationsMenu wsRef={wsRef} />}
+        
         <button
           onClick={onToggleRightPanel}
           className="flex items-center gap-2 text-sm text-gray-700 border px-3 py-1.5 rounded hover:bg-white shadow-sm"

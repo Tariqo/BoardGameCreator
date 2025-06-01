@@ -14,6 +14,7 @@ import GamesPage from './pages/GamesPage';
 import PlayPage from './pages/PlayPage';
 import PrivateRoute from './components/Auth/PrivateRoute';
 import { AuthProvider } from './context/AuthContext';
+import { WebSocketProvider } from './context/WebSocketContext';
 import { startUserSession, endUserSession, trackUserPresence } from './utils/analytics';
 
 const TrackLastPath: React.FC = () => {
@@ -88,9 +89,11 @@ const AppRoutes: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
+      <WebSocketProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </WebSocketProvider>
     </AuthProvider>
   );
 };

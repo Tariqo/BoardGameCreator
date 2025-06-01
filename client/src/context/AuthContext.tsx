@@ -63,6 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.error('Logout failed:', err);
     } finally {
+      localStorage.removeItem('wsToken');
       setUser(null);
       setRole(null);
     }

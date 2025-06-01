@@ -25,7 +25,7 @@ interface GameState {
 
 type RouteParams = {
   sessionId?: string;
-}
+};
 
 const PlayPage: React.FC = () => {
   const params = useParams<keyof RouteParams>();
@@ -37,44 +37,35 @@ const PlayPage: React.FC = () => {
   const [playedCards, setPlayedCards] = useState<Card[]>([]);
   const [draggedCard, setDraggedCard] = useState<Card | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
   const playerIndex = 0;
+
   const minuteIntervalRef = useRef<number | undefined>(undefined);
   const minutesSpentRef = useRef<number>(0);
+  const wsRef = useRef<WebSocket | null>(null);
 
-  const [logs, setLogs] = useState<string[]>([]);
   const addLog = (entry: string) => setLogs((prev) => [...prev.slice(-50), entry]);
 
-  // Track minutes spent on play page
   useEffect(() => {
-    // Track every minute
     minuteIntervalRef.current = window.setInterval(() => {
       minutesSpentRef.current += 1;
       trackPlayPageMinutes(gameState?.session?.gameId, minutesSpentRef.current);
-    }, 60000); // Every minute
+    }, 60000);
 
     return () => {
-      if (minuteIntervalRef.current) {
-        window.clearInterval(minuteIntervalRef.current);
-      }
-      // Final tracking of minutes spent
+      if (minuteIntervalRef.current) window.clearInterval(minuteIntervalRef.current);
       if (minutesSpentRef.current > 0) {
         trackPlayPageMinutes(gameState?.session?.gameId, minutesSpentRef.current);
       }
     };
   }, [gameState?.session?.gameId]);
 
-  // Track game session duration
   useEffect(() => {
     const sessionStartTime = Date.now();
-
     return () => {
       if (gameState?.session) {
         const duration = Math.floor((Date.now() - sessionStartTime) / 1000);
-        trackGameEnd(
-          gameState.session.gameId,
-          gameState.session.gameName,
-          duration
-        );
+        trackGameEnd(gameState.session.gameId, gameState.session.gameName, duration);
       }
     };
   }, [gameState?.session]);
@@ -82,6 +73,7 @@ const PlayPage: React.FC = () => {
   useEffect(() => {
     if (!sessionId) return;
 
+    // Fetch initial game state
     fetch(`${config.apiUrl}/api/game/session/${sessionId}/state`, {
       credentials: 'include',
     })
@@ -93,11 +85,50 @@ const PlayPage: React.FC = () => {
       .catch((err) => {
         console.error('Failed to fetch game state', err);
       });
+
+    // Setup WebSocket
+    const wsUrl = config.apiUrl.replace(/^http/, 'ws');
+    const ws = new WebSocket(`${wsUrl}/?sessionId=${sessionId}`);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log('🟢 WebSocket connected');
+    };
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.sessionId !== sessionId) return;
+
+      switch (msg.type) {
+        case 'session_started':
+        case 'game_update':
+        case 'game_over':
+          syncWithBackend(msg.state);
+          setGameState({ session: msg.state });
+          break;
+        case 'invitation':
+          alert(`🎮 ${msg.from} invited you to a game!`);
+          break;
+        default:
+          console.warn('Unknown WS message type:', msg.type);
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error('❌ WebSocket error', err);
+    };
+
+    ws.onclose = () => {
+      console.warn('🔌 WebSocket closed');
+    };
+
+    return () => {
+      ws.close();
+    };
   }, [sessionId]);
 
   const syncWithBackend = (game: any) => {
     const session = game.session || game;
-
     if (!session || !Array.isArray(session.players) || typeof session.turn !== 'number') {
       console.warn('❗Invalid game state received. Skipping sync.');
       return;
@@ -130,12 +161,11 @@ const PlayPage: React.FC = () => {
       });
 
       const updated = await res.json();
-      syncWithBackend(updated);
-
       if (!res.ok) {
         console.error(`Server responded with status ${res.status}:`, updated);
         throw new Error('Action failed');
       }
+      syncWithBackend(updated);
     } catch (err) {
       console.error(`Error performing action "${type}"`, err);
     }
@@ -153,7 +183,7 @@ const PlayPage: React.FC = () => {
 
   return (
     <div className="relative w-full h-screen bg-green-800 text-white overflow-hidden flex flex-col">
-      <PlayTopbar />
+      <PlayTopbar wsRef={wsRef} sessionId={sessionId} />
       <div className="flex-1 relative">
         <GamePlayCanvas
           canvasZones={canvasZones}

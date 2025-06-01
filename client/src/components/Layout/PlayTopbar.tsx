@@ -1,27 +1,94 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, LogOut, Gamepad2, Plus } from 'lucide-react';
+import { User, LogOut, Gamepad2, Plus, Send, Users } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useWebSocket } from '../../context/WebSocketContext';
+import NotificationsMenu from './NotificationsMenu';
 
-const PlayTopbar: React.FC = () => {
+interface PlayTopbarProps {
+  wsRef: React.MutableRefObject<WebSocket | null>;
+  sessionId: string | undefined;
+}
+
+const PlayTopbar: React.FC<PlayTopbarProps> = ({ wsRef, sessionId }) => {
   const { user, logout, login } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [usersOpen, setUsersOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const usersRef = useRef<HTMLDivElement>(null);
+  const { isConnected } = useWebSocket();
+
+  const [inviteUsername, setInviteUsername] = useState('');
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
+      if (usersRef.current && !usersRef.current.contains(e.target as Node)) {
+        setUsersOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const ws = wsRef.current;
+    if (!ws) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'online_users' && Array.isArray(msg.users)) {
+          setOnlineUsers(msg.users);
+        }
+      } catch (err) {
+        console.error('Failed to parse WebSocket message:', err);
+      }
+    };
+
+    ws.addEventListener('message', handleMessage);
+    return () => ws.removeEventListener('message', handleMessage);
+  }, [wsRef]);
+
   const handleGuestLogin = () => {
     login('guest', { username: 'Guest' });
     navigate('/games');
+  };
+
+  const handleInvite = () => {
+    setInviteError(null);
+    
+    if (!inviteUsername.trim()) {
+      setInviteError('Please enter a username');
+      return;
+    }
+    
+    if (!sessionId) {
+      setInviteError('No active game session');
+      return;
+    }
+    
+    if (!wsRef.current || !isConnected) {
+      setInviteError('Not connected to server');
+      return;
+    }
+
+    try {
+      wsRef.current.send(JSON.stringify({
+        type: 'invite',
+        toUsername: inviteUsername.trim(),
+        sessionId,
+      }));
+      setInviteUsername('');
+    } catch (err) {
+      console.error('Failed to send invite:', err);
+      setInviteError('Failed to send invite');
+    }
   };
 
   return (
@@ -34,6 +101,67 @@ const PlayTopbar: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-4">
+        {user && (
+          <>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Invite username"
+                  value={inviteUsername}
+                  onChange={(e) => setInviteUsername(e.target.value)}
+                  className="text-sm px-2 py-1 rounded bg-green-700 border border-green-600 placeholder-green-300 text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                />
+                {inviteError && (
+                  <div className="absolute top-full mt-1 left-0 right-0 text-xs text-red-300 bg-red-900/50 px-2 py-1 rounded">
+                    {inviteError}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={handleInvite}
+                disabled={!isConnected}
+                className={`px-2 py-1 rounded text-white transition-colors ${
+                  isConnected 
+                    ? 'bg-green-600 hover:bg-green-500' 
+                    : 'bg-green-800 cursor-not-allowed'
+                }`}
+                title={isConnected ? 'Send Invite' : 'Not connected'}
+              >
+                <Send size={16} />
+              </button>
+            </div>
+
+            <NotificationsMenu wsRef={wsRef} />
+
+            <div className="relative" ref={usersRef}>
+              <button
+                onClick={() => setUsersOpen(!usersOpen)}
+                className="flex items-center gap-2 px-2 py-1.5 rounded bg-green-800 hover:bg-green-700"
+                title="View Online Players"
+              >
+                <Users size={18} />
+              </button>
+              {usersOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-green-800 border border-green-700 rounded-md shadow-lg z-30 text-sm text-white max-h-64 overflow-y-auto">
+                  <div className="px-4 py-2 font-semibold border-b border-green-600">
+                    Online Players
+                  </div>
+                  {onlineUsers.length > 0 ? (
+                    onlineUsers.map((username) => (
+                      <div key={username} className="px-4 py-1.5 hover:bg-green-700">
+                        {username}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-2 text-green-300">No one online yet</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
         {user ? (
           <div className="relative" ref={menuRef}>
             <button

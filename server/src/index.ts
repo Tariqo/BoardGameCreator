@@ -2,10 +2,12 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import fileUpload from 'express-fileupload';
-import cookieParser from 'cookie-parser'; 
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import fs from 'fs';
+import http from 'http';
 import { corsMiddleware, optionsMiddleware } from './middleware/cors';
+import { setupWebSocket } from './websocketServer';
 
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
@@ -69,10 +71,14 @@ mongoose
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch((error) => console.error('❌ MongoDB connection error:', error));
 
-// Start Server
+// Create and start HTTP server with WebSocket support
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+const server = http.createServer(app);
+
+setupWebSocket(server); // 👈 Attach WebSocket server
+
+server.listen(PORT, () => {
+  console.log(`🚀 Server + WebSocket running on port ${PORT}`);
   console.log('Environment:', process.env.NODE_ENV);
 });
 
