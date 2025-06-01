@@ -221,20 +221,38 @@ const PlayPage: React.FC = () => {
     if (gameSession?.players?.length > 0) {
       console.log('[PlayPage syncWithBackend] First player object structure:', JSON.stringify(gameSession.players[0]));
     }
+
     if (!gameSession || !Array.isArray(gameSession.players) || typeof gameSession.turn !== 'number') {
       console.warn('❗Invalid game state received. Skipping sync.');
       return;
     }
-    
+
     console.log('[PlayPage syncWithBackend] User:', user);
+
+    // 🔄 Recalculate player index from user
+    let localPlayerIndex: number | null = null;
+    if (user && gameSession.players) {
+      const idx = gameSession.players.findIndex(
+        (p: { name?: string }) =>
+          p.name?.trim() === user.username?.trim()
+      );
+      localPlayerIndex = idx !== -1 ? idx : null;
+      setCurrentPlayerIndex(localPlayerIndex);
+    }
+
+    // ✅ Set game state pieces
     setDeck(Array.isArray(gameSession.deck) ? gameSession.deck : []);
     setDiscardPile(Array.isArray(gameSession.discardPile) ? gameSession.discardPile : []);
     setCanvasZones(gameSession.canvas || gameSession.elements || []);
-    setHand(currentPlayerIndex !== null && gameSession.players[currentPlayerIndex] ? gameSession.players[currentPlayerIndex].hand || [] : []);
+    setHand(localPlayerIndex !== null && gameSession.players[localPlayerIndex]
+      ? gameSession.players[localPlayerIndex].hand || []
+      : []
+    );
     setPlayedCards(Array.isArray(gameSession.playedCards) ? gameSession.playedCards : []);
     addLog(`🔄 Turn: ${gameSession.turn} (${gameSession.players[gameSession.turn]?.name || 'Unknown'})`);
     setLogs(Array.isArray(gameSession.logs) ? gameSession.logs : []);
   };
+
 
   const postAction = async (type: string, extra: Record<string, any> = {}) => {
     if (!sessionId || currentPlayerIndex === null) return;
