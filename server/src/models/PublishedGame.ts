@@ -51,6 +51,6 @@ const publishedGameSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-const PublishedGame = mongoose.model('PublishedGame', publishedGameSchema);
+const PublishedGame = mongoose.model('PublishedGame', publishedGameSchema, 'games');
 
 export default PublishedGame; 
