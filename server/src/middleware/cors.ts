@@ -1,10 +1,9 @@
 import cors from 'cors';
 import { Request, Response, NextFunction } from 'express';
 
-const ALLOWED_ORIGINS = [
-  'https://tabletopstudio.onrender.com',
-  'http://localhost:3000'
-];
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS ? 
+  process.env.ALLOWED_ORIGINS.split(',') : 
+  ['https://tabletopstudio.onrender.com', 'http://localhost:3000'];
 
 export const corsMiddleware = cors({
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {

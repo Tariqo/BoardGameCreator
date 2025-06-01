@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import config from '../config/config';
 
 const StartSessionPage = () => {
   const { gameId } = useParams<{ gameId: string }>();
@@ -7,7 +8,7 @@ const StartSessionPage = () => {
 
   useEffect(() => {
     const start = async () => {
-      const res = await fetch(`http://localhost:5000/api/game/session/start/${gameId}`, {
+      const res = await fetch(`${config.apiUrl}/api/game/session/start/${gameId}`, {
         method: 'POST',
         credentials: 'include',
       });
