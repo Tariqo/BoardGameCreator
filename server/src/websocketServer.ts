@@ -66,8 +66,8 @@ export const setupWebSocket = (server: http.Server) => {
 
       socket.on('message', (data: string) => {
         try {
-          const message = JSON.parse(data.toString());
-          handleMessage(client, message);
+        const message = JSON.parse(data.toString());
+        handleMessage(client, message);
         } catch (err) {
           console.error('❌ Failed to parse WebSocket message:', err);
         }

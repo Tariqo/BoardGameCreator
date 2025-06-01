@@ -79,6 +79,11 @@ export const postGameAction = async (req: Request, res: Response): Promise<any> 
       return;
     }
 
+    if (session.turn !== playerIndex) {
+      res.status(403).json({ error: "It's not your turn" });
+      return;
+    }
+
     const player = session.players[playerIndex];
     const hand = player.hand;
 
@@ -151,8 +156,15 @@ export const postGameAction = async (req: Request, res: Response): Promise<any> 
         session.playedCards.push({ ...card, x: position?.x ?? 0, y: position?.y ?? 0 });
         session.lastPlayedTags = card.tags || [];
         if (card.effect === 'discard') session.discardPile.push(card);
-        if (card.effect === 'reverse') session.direction *= -1;
-        session.turn = (session.turn + (card.effect === 'skip' ? 2 : 1) * session.direction + session.players.length) % session.players.length;
+        
+        const configuredMaxPlayers = typeof session.ruleSet?.maxPlayers === 'number' ? session.ruleSet.maxPlayers : undefined;
+        if (configuredMaxPlayers && session.players.length === configuredMaxPlayers) {
+          session.turn = (session.turn + 1) % session.players.length;
+        } else {
+          if (card.effect === 'reverse') session.direction *= -1;
+          session.turn = (session.turn + (card.effect === 'skip' ? 2 : 1) * session.direction + session.players.length) % session.players.length;
+        }
+
         session.markModified('players');
         session.markModified('playedCards');
         session.markModified('discardPile');
@@ -169,7 +181,12 @@ export const postGameAction = async (req: Request, res: Response): Promise<any> 
         break;
       }
       case 'end_turn': {
-        session.turn = (session.turn + session.direction + session.players.length) % session.players.length;
+        const configuredMaxPlayers = typeof session.ruleSet?.maxPlayers === 'number' ? session.ruleSet.maxPlayers : undefined;
+        if (configuredMaxPlayers && session.players.length === configuredMaxPlayers) {
+          session.turn = (session.turn + 1) % session.players.length;
+        } else {
+          session.turn = (session.turn + session.direction + session.players.length) % session.players.length;
+        }
         break;
       }
       case 'reverse_order': {
@@ -232,7 +249,11 @@ export const postGameAction = async (req: Request, res: Response): Promise<any> 
 };
 
 export const startGameSession = async (req: Request, res: Response): Promise<void> => {
+  console.log('[startGameSession] req.user:', (req as any).user);
+  console.log('[startGameSession] req.userId:', (req as any).userId);
   const publishedGameId = req.params.id;
+  // Assuming req.user is populated by authentication middleware
+  const authenticatedUser = (req as any).user; 
 
   try {
     const gameDoc = await Game.findById(publishedGameId).lean();
@@ -242,13 +263,28 @@ export const startGameSession = async (req: Request, res: Response): Promise<voi
     }
 
     const deck = [...(gameDoc.deck || [])];
-    const playerDefs = gameDoc.players?.length ? gameDoc.players : [{ name: 'Player 1' }];
+    // Use a default player definition if gameDoc.players is empty or not defined
+    const playerDefs = gameDoc.players?.length ? gameDoc.players : [{}]; // Default to one player slot if none defined
 
-    const players = playerDefs.map((p: any, i: number) => ({
-      name: p.name || `Player ${i + 1}`,
-      hand: deck.splice(0, 5),
-      eliminated: false,
-    }));
+    const players = playerDefs.map((pDef: any, i: number) => {
+      let playerName = pDef.name; // Use name from game definition if available
+      // If this is the first player (index 0) and an authenticated user is present,
+      // and the game definition didn't specify a name for the first player,
+      // use the authenticated user's username.
+      if (i === 0 && authenticatedUser?.username && !playerName) {
+        playerName = authenticatedUser.username;
+      }
+      // Fallback if no name is determined yet
+      if (!playerName) {
+        playerName = `Player ${i + 1}`;
+      }
+      return {
+        name: playerName,
+        // Consider adding userId here if available: userId: authenticatedUser?.id (if i === 0)
+        hand: deck.splice(0, gameDoc.ruleSet?.initialHandCount || 5), // Use initialHandCount from ruleSet or default
+        eliminated: false,
+      };
+    });
 
     const session = new GameSession({
       gameId: publishedGameId,
@@ -300,5 +336,70 @@ export const getGameState = async (req: Request, res: Response): Promise<void> =
     res.status(200).json(session);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch game state', details: err });
+  }
+};
+
+export const joinGameSession = async (req: Request, res: Response): Promise<void> => {
+  const { sessionId } = req.params;
+  const authenticatedUser = (req as any).user; // From authenticateToken
+
+  if (!authenticatedUser) {
+    res.status(401).json({ message: 'User not authenticated.' });
+    return;
+  }
+
+  try {
+    const session = await GameSession.findById(sessionId);
+
+    if (!session) {
+      res.status(404).json({ message: 'Game session not found.' });
+      return;
+    }
+
+    // Check if user is already in the session (using userId if available, otherwise username)
+    const userAlreadyInSession = session.players.some(
+      (player: any) => 
+        (player.userId && player.userId.toString() === authenticatedUser._id.toString()) || 
+        player.name === authenticatedUser.username
+    );
+
+    if (userAlreadyInSession) {
+      // User is already part of the game, send current state
+      res.status(200).json(session.toObject()); 
+      return;
+    }
+
+    const maxPlayers = session.ruleSet?.maxPlayers || 2; // Default to 2 if not defined
+    if (session.players.length >= maxPlayers) {
+      res.status(403).json({ message: 'Game session is full.' });
+      return;
+    }
+
+    // Add the new player
+    const newPlayer = {
+      name: authenticatedUser.username, // Or authenticatedUser.name
+      userId: authenticatedUser._id, // Store the MongoDB ObjectId
+      hand: [], // New players start with an empty hand for now
+      eliminated: false,
+      // Any other default player properties
+    };
+    session.players.push(newPlayer);
+    session.logs.push(`👋 ${authenticatedUser.username} joined the game!`);
+
+    await session.save();
+
+    // Broadcast the updated game state to all clients in the session
+    sendToSession(session._id.toString(), {
+      type: 'game_update', // Or a more specific 'player_joined' type if you prefer
+      sessionId: session._id.toString(),
+      state: session.toObject(),
+    });
+
+    console.log(`Player ${authenticatedUser.username} joined session ${sessionId}. Players:`, session.players.map(p=>p.name));
+    res.status(200).json(session.toObject());
+
+  } catch (error) {
+    console.error('Error joining game session:', error);
+    res.status(500).json({ message: 'Error joining game session.', details: (error as Error).message });
   }
 };

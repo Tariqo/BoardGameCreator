@@ -54,6 +54,7 @@ export const authenticateToken = async (
 
     req.userId = decoded.userId;
     req.user = user;
+    console.log('[authenticateToken] User attached to req.user:', req.user);
     next();
   } catch (err) {
     if (err instanceof jwt.JsonWebTokenError) {
