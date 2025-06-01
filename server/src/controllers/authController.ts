@@ -99,8 +99,8 @@ export const login = async (
     // Set token as secure, HTTP-only cookie
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false, // set to true in production
-      sameSite: 'lax',
+      secure: true, // set to true in production
+      sameSite: 'none',
       path: '/',
       maxAge: 24 * 60 * 60 * 1000,
     });
